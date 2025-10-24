@@ -61,17 +61,70 @@ def create_financial_summary(info, ticker_symbol):
     
     return pd.DataFrame(financial_data)
 
-st.title("📈 Stock Chart Analysis")
+if 'watchlist' not in st.session_state:
+    st.session_state.watchlist = ['AAPL', 'MSFT', 'GOOGL', 'TSLA']
+
+if 'current_ticker' not in st.session_state:
+    st.session_state.current_ticker = 'AAPL'
+
+st.markdown("""
+<style>
+    .stButton > button {
+        width: 100%;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+    .metric-card {
+        background-color: #f0f2f6;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.title("📈 Professional Stock Chart Analysis")
 
 tab1, tab2 = st.tabs(["📊 Chart Analysis", "📉 Compare Stocks"])
 
 with tab1:
-    col_input, col_info = st.columns([1, 4])
+    col_left, col_main, col_right = st.columns([1.5, 6, 1.5])
     
-    with col_input:
-        ticker_symbol = st.text_input("Stock Symbol", value="AAPL", placeholder="AAPL, MSFT, TSLA", key="main_ticker", label_visibility="collapsed").upper()
+    with col_left:
+        st.markdown("### 🔖 Watchlist")
+        
+        for ticker in st.session_state.watchlist:
+            if st.button(f"📊 {ticker}", key=f"watch_{ticker}", use_container_width=True):
+                st.session_state.current_ticker = ticker
+                st.rerun()
+        
+        st.markdown("---")
+        new_ticker = st.text_input("Add Symbol", placeholder="NVDA", key="add_ticker").upper()
+        if st.button("➕ Add to Watchlist", key="add_btn", use_container_width=True):
+            if new_ticker and new_ticker not in st.session_state.watchlist:
+                st.session_state.watchlist.append(new_ticker)
+                st.rerun()
+        
+        if len(st.session_state.watchlist) > 0:
+            st.markdown("---")
+            remove_ticker = st.selectbox("Remove from list", st.session_state.watchlist, key="remove_select")
+            if st.button("🗑️ Remove", key="remove_btn", use_container_width=True):
+                st.session_state.watchlist.remove(remove_ticker)
+                if st.session_state.current_ticker == remove_ticker and st.session_state.watchlist:
+                    st.session_state.current_ticker = st.session_state.watchlist[0]
+                st.rerun()
     
-    if ticker_symbol:
+    with col_main:
+        col_sym, col_info = st.columns([1, 4])
+        
+        with col_sym:
+            ticker_input = st.text_input("Symbol", value=st.session_state.current_ticker, placeholder="AAPL", key="main_ticker", label_visibility="collapsed").upper()
+            if ticker_input != st.session_state.current_ticker:
+                st.session_state.current_ticker = ticker_input
+                st.rerun()
+        
+        ticker_symbol = st.session_state.current_ticker
+        
         try:
             ticker, info = get_stock_info(ticker_symbol)
             
@@ -95,92 +148,124 @@ with tab1:
                 
                 st.markdown("---")
                 
-                with st.sidebar:
-                    st.markdown("## 📊 Chart Controls")
+                st.markdown("#### ⏱️ Timeframe & Chart Settings")
+                col_t1, col_t2, col_t3, col_t4, col_t5, col_t6, col_t7, col_t8, col_t9, col_spacer = st.columns([1,1,1,1,1,1,1,1,1,2])
+                
+                time_periods = {
+                    "1D": "1d", "1W": "5d", "1M": "1mo", "3M": "3mo", 
+                    "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "MAX": "max"
+                }
+                
+                if 'selected_period' not in st.session_state:
+                    st.session_state.selected_period = "1Y"
+                
+                with col_t1:
+                    if st.button("1D", key="tf_1d", use_container_width=True, type="primary" if st.session_state.selected_period == "1D" else "secondary"):
+                        st.session_state.selected_period = "1D"
+                with col_t2:
+                    if st.button("1W", key="tf_1w", use_container_width=True, type="primary" if st.session_state.selected_period == "1W" else "secondary"):
+                        st.session_state.selected_period = "1W"
+                with col_t3:
+                    if st.button("1M", key="tf_1m", use_container_width=True, type="primary" if st.session_state.selected_period == "1M" else "secondary"):
+                        st.session_state.selected_period = "1M"
+                with col_t4:
+                    if st.button("3M", key="tf_3m", use_container_width=True, type="primary" if st.session_state.selected_period == "3M" else "secondary"):
+                        st.session_state.selected_period = "3M"
+                with col_t5:
+                    if st.button("6M", key="tf_6m", use_container_width=True, type="primary" if st.session_state.selected_period == "6M" else "secondary"):
+                        st.session_state.selected_period = "6M"
+                with col_t6:
+                    if st.button("1Y", key="tf_1y", use_container_width=True, type="primary" if st.session_state.selected_period == "1Y" else "secondary"):
+                        st.session_state.selected_period = "1Y"
+                with col_t7:
+                    if st.button("2Y", key="tf_2y", use_container_width=True, type="primary" if st.session_state.selected_period == "2Y" else "secondary"):
+                        st.session_state.selected_period = "2Y"
+                with col_t8:
+                    if st.button("5Y", key="tf_5y", use_container_width=True, type="primary" if st.session_state.selected_period == "5Y" else "secondary"):
+                        st.session_state.selected_period = "5Y"
+                with col_t9:
+                    if st.button("MAX", key="tf_max", use_container_width=True, type="primary" if st.session_state.selected_period == "MAX" else "secondary"):
+                        st.session_state.selected_period = "MAX"
+                
+                period = time_periods[st.session_state.selected_period]
+                
+                col_ct1, col_ct2, col_ct3, col_spacer2 = st.columns([1.5, 1.5, 1.5, 6.5])
+                
+                with col_ct1:
+                    if 'chart_type' not in st.session_state:
+                        st.session_state.chart_type = "Candlestick"
                     
-                    st.markdown("### Time Period")
-                    time_periods = {
-                        "1 Day": "1d",
-                        "1 Week": "5d",
-                        "1 Month": "1mo",
-                        "3 Months": "3mo",
-                        "6 Months": "6mo",
-                        "1 Year": "1y",
-                        "2 Years": "2y",
-                        "5 Years": "5y",
-                        "Max": "max"
-                    }
+                    chart_options = ["Line", "Candlestick", "Area"]
+                    selected_chart = st.selectbox("Chart Type", chart_options, 
+                                                  index=chart_options.index(st.session_state.chart_type),
+                                                  key="chart_type_select")
+                    st.session_state.chart_type = selected_chart
+                
+                with col_ct2:
+                    chart_height = st.slider("Height", min_value=400, max_value=1200, value=700, step=50, key="height_slider")
+                
+                st.markdown("#### 🔧 Indicators")
+                col_i1, col_i2, col_i3, col_i4, col_i5, col_spacer3 = st.columns([1.5, 1.5, 1.5, 1.5, 1.5, 4.5])
+                
+                with col_i1:
+                    show_bb = st.checkbox("📊 Bollinger Bands", value=False, key="bb_toggle")
+                with col_i2:
+                    show_rsi = st.checkbox("📈 RSI", value=False, key="rsi_toggle")
+                with col_i3:
+                    show_macd = st.checkbox("📉 MACD", value=False, key="macd_toggle")
+                with col_i4:
+                    show_volume_ma = st.checkbox("📦 Volume MA", value=False, key="vol_ma_toggle")
+                with col_i5:
+                    show_mas = st.checkbox("📍 Moving Averages", value=False, key="ma_toggle")
+                
+                with st.expander("⚙️ Advanced Indicator Settings", expanded=False):
+                    col_s1, col_s2, col_s3 = st.columns(3)
                     
-                    selected_period_label = st.radio(
-                        "Select Period",
-                        options=list(time_periods.keys()),
-                        index=5,
-                        key="period_radio",
-                        label_visibility="collapsed"
-                    )
-                    period = time_periods[selected_period_label]
+                    with col_s1:
+                        st.markdown("**Moving Averages**")
+                        show_sma1 = st.checkbox("SMA 20", value=False, key="sma1")
+                        show_sma2 = st.checkbox("SMA 50", value=False, key="sma2")
+                        show_sma3 = st.checkbox("SMA 200", value=False, key="sma3")
+                        show_custom_sma = st.checkbox("Custom SMA", value=False, key="custom_sma")
+                        if show_custom_sma:
+                            custom_sma_period = st.number_input("SMA Period", min_value=2, max_value=500, value=30, key="custom_sma_period")
                     
-                    st.markdown("---")
-                    st.markdown("### Chart Type")
-                    chart_type = st.radio(
-                        "Chart Type",
-                        ["Line", "Candlestick", "Area"],
-                        index=1,
-                        key="chart_type_radio",
-                        label_visibility="collapsed"
-                    )
+                    with col_s2:
+                        st.markdown("**Exponential MAs**")
+                        show_ema1 = st.checkbox("EMA 12", value=False, key="ema1")
+                        show_ema2 = st.checkbox("EMA 26", value=False, key="ema2")
+                        show_custom_ema = st.checkbox("Custom EMA", value=False, key="custom_ema")
+                        if show_custom_ema:
+                            custom_ema_period = st.number_input("EMA Period", min_value=2, max_value=500, value=30, key="custom_ema_period")
                     
-                    st.markdown("---")
-                    st.markdown("### Moving Averages")
-                    
-                    show_sma1 = st.checkbox("SMA 20", value=False, key="sma1")
-                    show_sma2 = st.checkbox("SMA 50", value=False, key="sma2")
-                    show_sma3 = st.checkbox("SMA 200", value=False, key="sma3")
-                    
-                    show_custom_sma = st.checkbox("Custom SMA", value=False, key="custom_sma")
-                    if show_custom_sma:
-                        custom_sma_period = st.number_input("Period", min_value=2, max_value=500, value=30, key="custom_sma_period")
-                    
-                    show_ema1 = st.checkbox("EMA 12", value=False, key="ema1")
-                    show_ema2 = st.checkbox("EMA 26", value=False, key="ema2")
-                    
-                    show_custom_ema = st.checkbox("Custom EMA", value=False, key="custom_ema")
-                    if show_custom_ema:
-                        custom_ema_period = st.number_input("Period", min_value=2, max_value=500, value=30, key="custom_ema_period")
-                    
-                    st.markdown("---")
-                    st.markdown("### Technical Indicators")
-                    
-                    show_bb = st.checkbox("Bollinger Bands", value=False, key="bollinger")
-                    if show_bb:
-                        bb_period = st.slider("BB Period", min_value=5, max_value=50, value=20, key="bb_period")
-                        bb_std = st.slider("Std Dev", min_value=1.0, max_value=3.0, value=2.0, step=0.1, key="bb_std")
-                    
-                    show_rsi = st.checkbox("RSI", value=False, key="rsi")
-                    show_macd = st.checkbox("MACD", value=False, key="macd")
-                    show_volume_ma = st.checkbox("Volume MA", value=False, key="volume_ma")
-                    
-                    st.markdown("---")
-                    st.markdown("### Chart Settings")
-                    chart_height = st.slider("Chart Height", min_value=400, max_value=1200, value=700, step=50, key="chart_height")
+                    with col_s3:
+                        st.markdown("**Bollinger Bands Settings**")
+                        if show_bb:
+                            bb_period = st.slider("BB Period", min_value=5, max_value=50, value=20, key="bb_period")
+                            bb_std = st.slider("Std Dev", min_value=1.0, max_value=3.0, value=2.0, step=0.1, key="bb_std")
+                        else:
+                            bb_period = 20
+                            bb_std = 2.0
+                
+                st.markdown("---")
                 
                 hist_data = ticker.history(period=period)
                 
                 if not hist_data.empty:
                     df = hist_data.copy()
                     
-                    if show_sma1:
+                    if show_mas or show_sma1:
                         df['SMA_20'] = ta.trend.sma_indicator(df['Close'], window=20)
-                    if show_sma2:
+                    if show_mas or show_sma2:
                         df['SMA_50'] = ta.trend.sma_indicator(df['Close'], window=50)
-                    if show_sma3:
+                    if show_mas or show_sma3:
                         df['SMA_200'] = ta.trend.sma_indicator(df['Close'], window=200)
                     if show_custom_sma:
                         df[f'SMA_{custom_sma_period}'] = ta.trend.sma_indicator(df['Close'], window=custom_sma_period)
                     
-                    if show_ema1:
+                    if show_mas or show_ema1:
                         df['EMA_12'] = ta.trend.ema_indicator(df['Close'], window=12)
-                    if show_ema2:
+                    if show_mas or show_ema2:
                         df['EMA_26'] = ta.trend.ema_indicator(df['Close'], window=26)
                     if show_custom_ema:
                         df[f'EMA_{custom_ema_period}'] = ta.trend.ema_indicator(df['Close'], window=custom_ema_period)
@@ -211,7 +296,7 @@ with tab1:
                     
                     row_heights = [0.6] + [0.2] * (num_subplots - 1)
                     
-                    subplot_titles = [f'{ticker_symbol} - {selected_period_label}']
+                    subplot_titles = [f'{ticker_symbol} - {st.session_state.selected_period}']
                     if show_rsi:
                         subplot_titles.append('RSI')
                     if show_macd:
@@ -226,7 +311,7 @@ with tab1:
                         specs=[[{"secondary_y": True}]] + [[{"secondary_y": False}]] * (num_subplots - 1)
                     )
                     
-                    if chart_type == "Candlestick":
+                    if st.session_state.chart_type == "Candlestick":
                         fig.add_trace(go.Candlestick(
                             x=df.index,
                             open=df['Open'],
@@ -237,7 +322,7 @@ with tab1:
                             increasing_line_color='#26a69a',
                             decreasing_line_color='#ef5350'
                         ), row=1, col=1, secondary_y=False)
-                    elif chart_type == "Area":
+                    elif st.session_state.chart_type == "Area":
                         fig.add_trace(go.Scatter(
                             x=df.index,
                             y=df['Close'],
@@ -276,10 +361,10 @@ with tab1:
                             fill='tonexty', fillcolor='rgba(250, 128, 114, 0.1)'
                         ), row=1, col=1, secondary_y=False)
                     
-                    ma_colors = ['orange', 'purple', 'brown', 'pink', 'cyan', 'magenta']
+                    ma_colors = ['#ff9800', '#9c27b0', '#795548', '#e91e63', '#00bcd4', '#ff5722']
                     ma_idx = 0
                     
-                    if show_sma1:
+                    if show_mas or show_sma1:
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['SMA_20'],
                             mode='lines', name='SMA 20',
@@ -287,7 +372,7 @@ with tab1:
                         ), row=1, col=1, secondary_y=False)
                         ma_idx += 1
                     
-                    if show_sma2:
+                    if show_mas or show_sma2:
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['SMA_50'],
                             mode='lines', name='SMA 50',
@@ -295,7 +380,7 @@ with tab1:
                         ), row=1, col=1, secondary_y=False)
                         ma_idx += 1
                     
-                    if show_sma3:
+                    if show_mas or show_sma3:
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['SMA_200'],
                             mode='lines', name='SMA 200',
@@ -311,7 +396,7 @@ with tab1:
                         ), row=1, col=1, secondary_y=False)
                         ma_idx += 1
                     
-                    if show_ema1:
+                    if show_mas or show_ema1:
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['EMA_12'],
                             mode='lines', name='EMA 12',
@@ -319,7 +404,7 @@ with tab1:
                         ), row=1, col=1, secondary_y=False)
                         ma_idx += 1
                     
-                    if show_ema2:
+                    if show_mas or show_ema2:
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['EMA_26'],
                             mode='lines', name='EMA 26',
@@ -352,7 +437,7 @@ with tab1:
                             y=df['Volume_MA'],
                             mode='lines',
                             name='Volume MA',
-                            line=dict(color='blue', width=1.5),
+                            line=dict(color='#2196f3', width=1.5),
                             showlegend=True
                         ), row=1, col=1, secondary_y=True)
                     
@@ -362,7 +447,7 @@ with tab1:
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['RSI'],
                             mode='lines', name='RSI',
-                            line=dict(color='purple', width=2)
+                            line=dict(color='#9c27b0', width=2)
                         ), row=current_row, col=1)
                         
                         fig.add_hline(y=70, line_dash="dash", line_color="red", row=current_row, col=1)
@@ -375,16 +460,16 @@ with tab1:
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['MACD'],
                             mode='lines', name='MACD',
-                            line=dict(color='blue', width=2)
+                            line=dict(color='#2196f3', width=2)
                         ), row=current_row, col=1)
                         
                         fig.add_trace(go.Scatter(
                             x=df.index, y=df['MACD_signal'],
                             mode='lines', name='Signal',
-                            line=dict(color='red', width=2)
+                            line=dict(color='#f44336', width=2)
                         ), row=current_row, col=1)
                         
-                        colors_macd = ['green' if val >= 0 else 'red' for val in df['MACD_diff']]
+                        colors_macd = ['#26a69a' if val >= 0 else '#ef5350' for val in df['MACD_diff']]
                         fig.add_trace(go.Bar(
                             x=df.index, y=df['MACD_diff'],
                             name='Histogram',
@@ -591,6 +676,25 @@ with tab1:
         
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
+    
+    with col_right:
+        st.markdown("### 📊 Quick Stats")
+        if ticker_symbol:
+            try:
+                ticker_obj = yf.Ticker(ticker_symbol)
+                info = ticker_obj.info
+                
+                mkt_cap = info.get('marketCap')
+                pe_ratio = info.get('trailingPE')
+                div_yield = info.get('dividendYield')
+                beta = info.get('beta')
+                
+                st.metric("Market Cap", f"${format_large_number(mkt_cap)}" if isinstance(mkt_cap, (int, float)) else 'N/A')
+                st.metric("P/E Ratio", format_number(pe_ratio) if pe_ratio else 'N/A')
+                st.metric("Div Yield", format_percentage(div_yield) if div_yield else 'N/A')
+                st.metric("Beta", format_number(beta) if beta else 'N/A')
+            except:
+                pass
 
 with tab2:
     st.markdown("### Compare Multiple Stocks")
