@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import ta
+import requests
 
 st.set_page_config(page_title="Stock Chart Analysis", layout="wide")
 
@@ -61,11 +62,57 @@ def create_financial_summary(info, ticker_symbol):
     
     return pd.DataFrame(financial_data)
 
+def search_stocks(query, max_results=10):
+    """
+    Search for stocks using Yahoo Finance API
+    Returns list of matches with symbol, name, type, exchange, sector, industry
+    """
+    try:
+        url = "https://query2.finance.yahoo.com/v1/finance/search"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        params = {
+            "q": query,
+            "quotes_count": max_results,
+            "country": "United States"
+        }
+        
+        response = requests.get(
+            url=url,
+            params=params,
+            headers={'User-Agent': user_agent},
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            results = []
+            
+            for quote in data.get('quotes', []):
+                result = {
+                    'symbol': quote.get('symbol', 'N/A'),
+                    'name': quote.get('shortname') or quote.get('longname', 'N/A'),
+                    'type': quote.get('quoteType', 'N/A'),
+                    'exchange': quote.get('exchange', 'N/A'),
+                    'sector': quote.get('sector', 'N/A'),
+                    'industry': quote.get('industry', 'N/A')
+                }
+                results.append(result)
+            
+            return results
+        else:
+            return []
+    except Exception as e:
+        st.error(f"검색 오류: {str(e)}")
+        return []
+
 if 'watchlist' not in st.session_state:
     st.session_state.watchlist = ['AAPL', 'MSFT', 'GOOGL', 'TSLA']
 
 if 'current_ticker' not in st.session_state:
     st.session_state.current_ticker = 'AAPL'
+
+if 'search_results' not in st.session_state:
+    st.session_state.search_results = []
 
 st.markdown("""
 <style>
@@ -91,6 +138,62 @@ with tab1:
     col_left, col_main, col_right = st.columns([1.5, 6, 1.5])
     
     with col_left:
+        st.markdown("### 🔍 Stock Search")
+        
+        search_query = st.text_input("Search by name, symbol, sector...", placeholder="Apple, Technology, NVDA", key="search_input")
+        
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            search_btn = st.button("🔍 Search", key="search_btn", use_container_width=True)
+        with col_s2:
+            clear_btn = st.button("Clear", key="clear_search_btn", use_container_width=True)
+        
+        if clear_btn:
+            st.session_state.search_results = []
+        
+        if search_btn and search_query:
+            with st.spinner("Searching..."):
+                results = search_stocks(search_query, max_results=10)
+                st.session_state.search_results = results
+        
+        if 'search_results' in st.session_state and st.session_state.search_results:
+            st.markdown("**Search Results:**")
+            
+            filter_type = st.selectbox(
+                "Filter by type",
+                ["All", "EQUITY", "ETF", "MUTUALFUND", "INDEX"],
+                key="filter_type"
+            )
+            
+            filtered_results = st.session_state.search_results
+            if filter_type != "All":
+                filtered_results = [r for r in st.session_state.search_results if r['type'] == filter_type]
+            
+            if filtered_results:
+                for idx, result in enumerate(filtered_results[:8]):
+                    symbol = result['symbol']
+                    name = result['name']
+                    stock_type = result['type']
+                    exchange = result['exchange']
+                    
+                    label = f"{symbol}"
+                    if len(name) < 25:
+                        label += f" - {name}"
+                    
+                    if st.button(
+                        label,
+                        key=f"search_result_{idx}_{symbol}",
+                        use_container_width=True,
+                        help=f"{name}\nType: {stock_type} | Exchange: {exchange}"
+                    ):
+                        st.session_state.current_ticker = symbol
+                        if symbol not in st.session_state.watchlist:
+                            st.session_state.watchlist.append(symbol)
+                        st.rerun()
+            else:
+                st.info("No results for this filter")
+        
+        st.markdown("---")
         st.markdown("### 🔖 Watchlist")
         
         for ticker in st.session_state.watchlist:
