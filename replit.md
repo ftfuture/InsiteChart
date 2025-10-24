@@ -1,12 +1,24 @@
 # Overview
 
-This is a comprehensive Stock Financial Data Analysis application built with Streamlit that allows users to analyze financial information for publicly traded stocks. The application uses the Yahoo Finance API (via yfinance) to fetch real-time stock data and presents it through an interactive web interface with advanced data visualizations using Plotly.
+This is a comprehensive Stock Chart Analysis application built with Streamlit that provides an advanced charting experience for analyzing publicly traded stocks. The application uses the Yahoo Finance API (via yfinance) to fetch real-time stock data and presents it through a chart-focused interface with professional-grade data visualizations using Plotly.
 
 ## Recent Changes (October 2025)
 
-### Major Feature Additions:
+### Latest Update - Chart-Focused Redesign:
+**Complete UI Restructure** - The application has been completely redesigned with charts as the main focus:
+- **Compact Header**: Stock symbol input and essential info (company name, price, change %) in a single clean row
+- **Sidebar Controls**: All chart controls organized in an intuitive sidebar panel for easy access
+- **Large Charts**: Chart display maximized with adjustable height (400-1200px, default 700px)
+- **Enhanced Time Periods**: Expanded from 5 to 9 time period options (1D, 1W, 1M, 3M, 6M, 1Y, 2Y, 5Y, MAX)
+- **Area Chart**: New chart type added alongside Line and Candlestick
+- **Bollinger Bands**: Added with customizable period and standard deviation
+- **Multiple Moving Averages**: Display up to 6 different moving averages simultaneously (SMA 20/50/200, EMA 12/26, plus custom)
+- **Volume MA**: Volume moving average overlay on secondary axis
+- **Collapsible Sections**: Financial data moved to expandable sections below chart for cleaner layout
+
+### Previous Major Features:
 1. **Multiple Stock Comparison** - Compare 2-4 stocks side-by-side with normalized returns charts and performance metrics
-2. **Technical Indicators** - SMA, EMA, RSI, and MACD indicators with customizable parameters
+2. **Technical Indicators** - SMA, EMA, RSI, MACD, and Bollinger Bands with customizable parameters
 3. **Candlestick Charts** - OHLC visualization with volume bars for detailed price analysis
 4. **Financial Statements** - Income statement, balance sheet, and cash flow data tables with CSV export
 5. **Custom Historical Data Export** - Date range selection and metric filtering for tailored data exports
@@ -17,28 +29,57 @@ Preferred communication style: Simple, everyday language.
 
 # Features
 
-## Single Stock Analysis
-- Financial summary with 13 key metrics (price, volume, market cap, P/E ratio, etc.)
-- Historical price charts with 5 time period options (1M, 3M, 6M, 1Y, 5Y)
-- Technical indicators: SMA, EMA, RSI, MACD
-- Dual chart modes: Line chart and candlestick chart with volume
-- Financial statements (income, balance sheet, cash flow)
-- Custom historical data export with metric filtering
-- CSV downloads for all data tables
+## Chart Analysis (Primary Tab)
 
-## Multiple Stock Comparison
+### Chart Display
+- **Large, interactive charts** as the main focus with adjustable height (400-1200px)
+- **3 Chart Types**: Line (default), Candlestick with OHLC, and Area chart with gradient fill
+- **9 Time Periods**: 1 Day, 1 Week, 1 Month, 3 Months, 6 Months, 1 Year, 2 Years, 5 Years, Max
+- **Real-time price updates** with color-coded change indicators (🟢 up / 🔴 down)
+
+### Moving Averages
+- **SMA 20, 50, 200**: Standard simple moving averages for trend analysis
+- **EMA 12, 26**: Exponential moving averages for faster response
+- **Custom SMA/EMA**: User-defined periods (2-500 days)
+- **Multiple overlays**: Display up to 6 moving averages simultaneously with distinct colors
+- **Works on all chart types**: Overlays properly on line, candlestick, and area charts
+
+### Technical Indicators
+- **Bollinger Bands**: Volatility bands with adjustable period (5-50) and standard deviation (1.0-3.0)
+- **RSI (Relative Strength Index)**: Momentum oscillator with overbought (70) / oversold (30) lines
+- **MACD**: Moving Average Convergence Divergence with signal line and histogram
+- **Volume MA**: 20-period moving average overlay on volume bars
+
+### Volume Display
+- **Integrated volume bars** on secondary y-axis below price chart
+- **Color-coded**: Green (price up) / Red (price down) matching candle direction
+- **Volume MA overlay**: Optional 20-period SMA for volume trend analysis
+
+### Chart Controls (Sidebar)
+- **Time Period Selection**: Radio buttons for quick period switching
+- **Chart Type Toggle**: Switch between Line, Candlestick, and Area instantly
+- **Indicator Toggles**: Easy checkboxes for all indicators
+- **Customization Sliders**: Fine-tune indicator parameters (BB period/std, chart height)
+- **Organized Sections**: Grouped by function for intuitive navigation
+
+### Period Statistics
+Five key metrics displayed below chart:
+- **High/Low**: Period's highest and lowest prices
+- **Change**: Total price change and percentage for selected period
+- **Avg Volume**: Average trading volume
+- **Volatility**: Standard deviation of price changes
+
+### Detailed Information (Expandable)
+- **Financial Summary Table**: 13 key metrics in collapsible section
+- **Financial Statements**: Income, Balance Sheet, Cash Flow in separate tabs
+- **Custom Data Export**: Historical data with custom date range and metric selection
+
+## Stock Comparison (Secondary Tab)
 - Compare 2-4 stocks simultaneously
 - Normalized returns chart showing percentage changes from start date
 - Performance metrics table with key statistics for each stock
 - Time period selection (1M, 3M, 6M, 1Y, 5Y)
 - CSV export for comparison data
-
-## Technical Analysis Tools
-- Simple Moving Average (SMA) with configurable periods (5-200 days)
-- Exponential Moving Average (EMA) with configurable periods (5-200 days)
-- Relative Strength Index (RSI) with overbought/oversold indicators
-- MACD (Moving Average Convergence Divergence) with signal line and histogram
-- All indicators work with both chart types
 
 ## Data Export Options
 - Financial summary CSV export
@@ -55,11 +96,14 @@ Preferred communication style: Simple, everyday language.
 - **Pros**: Fast prototyping, built-in widgets, automatic reactivity, Python-native
 - **Cons**: Limited customization compared to traditional web frameworks, requires Python runtime
 
-**Layout Structure**: Tab-based organization with wide layout
-- Two main tabs: "Single Stock Analysis" and "Compare Multiple Stocks"
-- Uses Streamlit's native column system for responsive design
-- Expandable sections for optional features (custom data export)
-- Page configured with custom title and wide layout for better data visualization
+**Layout Structure**: Chart-focused design with sidebar controls
+- **Main Tab**: "Chart Analysis" - Primary charting interface
+- **Secondary Tab**: "Compare Stocks" - Multi-stock comparison
+- **Sidebar**: All chart controls (time period, chart type, indicators, settings)
+- **Compact Header**: Stock input and essential info in single row
+- **Large Chart Area**: Main content with maximized chart display
+- **Expandable Sections**: Detailed data in collapsible sections below chart
+- **Wide Layout**: Full browser width utilization for better visualization
 
 ## Data Layer
 
@@ -77,29 +121,32 @@ Preferred communication style: Simple, everyday language.
 
 **Technical Analysis**: ta library
 - Provides implementations for technical indicators
-- Functions used: sma_indicator, ema_indicator, rsi, MACD
+- Functions used: sma_indicator, ema_indicator, rsi, MACD, BollingerBands
 - Ensures accurate calculations for trading indicators
 
 ## Visualization
 
 **Charting Library**: Plotly Graph Objects
 - **Rationale**: Interactive charts with zoom, pan, and hover capabilities enhance user experience
-- **Pros**: Rich interactivity, professional appearance, extensive chart types
+- **Pros**: Rich interactivity, professional appearance, extensive chart types, subplot support
 - **Cons**: Heavier than static plotting libraries
 
 **Chart Types**:
-1. Line charts for closing prices
-2. Candlestick charts with OHLC data
-3. Volume bar charts
-4. RSI oscillator charts
-5. MACD indicator charts
-6. Multi-stock comparison charts
+1. Line charts for closing prices with gradient fills (Area mode)
+2. Candlestick charts with OHLC data and color coding
+3. Volume bar charts on secondary y-axis
+4. RSI oscillator charts in separate subplot
+5. MACD indicator charts with histogram in separate subplot
+6. Multi-stock comparison charts with normalized returns
 
 **Visualization Features**:
-- Overlays for moving averages on price charts
-- Subplot layouts for volume and indicators
-- Color-coded elements (green/red for up/down movements)
-- Interactive hover templates with formatted data
+- **Multiple subplots**: Main chart + RSI + MACD in synchronized layout
+- **Dual y-axes**: Price on primary, Volume on secondary
+- **Overlays**: Moving averages and Bollinger Bands on price chart
+- **Color scheme**: Green (#26a69a) for up, Red (#ef5350) for down
+- **Interactive hover**: Unified crosshair with detailed data tooltips
+- **Responsive sizing**: use_container_width=True for flexible layout
+- **Adjustable height**: 400-1200px range with slider control
 
 ## Utility Functions
 
@@ -117,7 +164,7 @@ Preferred communication style: Simple, everyday language.
 1. **streamlit**: Web application framework for the user interface
 2. **yfinance**: Yahoo Finance API wrapper for stock data retrieval
 3. **pandas**: Data manipulation and analysis
-4. **plotly**: Interactive data visualization
+4. **plotly**: Interactive data visualization with subplots
 5. **ta**: Technical analysis library for trading indicators
 6. **datetime**: Date and time manipulation for historical data queries
 
@@ -139,6 +186,20 @@ Preferred communication style: Simple, everyday language.
 
 # Implementation Notes
 
+## UI/UX Design
+- **Chart-first approach**: Main content is the chart, everything else is supporting
+- **Sidebar organization**: All controls grouped logically by function
+- **Clean header**: Minimal info (symbol, company, price) in compact format
+- **Collapsible details**: Financial data accessible but not cluttering main view
+- **Color indicators**: Emoji-based visual cues for price direction (🟢/🔴)
+
+## Chart Rendering
+- **Dynamic subplot creation**: Chart layout adjusts based on enabled indicators
+- **Row heights**: Main chart 60%, indicators 20% each for balanced view
+- **Secondary y-axis**: Volume shares space with price without obscuring data
+- **Legend positioning**: Horizontal at top-right for easy reference
+- **Grid styling**: Light gray (rgba) for subtle background guides
+
 ## Error Handling
 - Try-except blocks around all external API calls
 - User-friendly error messages for invalid stock symbols
@@ -150,11 +211,15 @@ Preferred communication style: Simple, everyday language.
 - Yahoo Finance API may have rate limits
 - Multiple API calls for comparison feature (one per stock)
 - Financial statements are separate API calls
+- Large charts may impact performance on older devices
 
 ## Future Enhancements (Potential)
-- Data caching to reduce API calls
+- Data caching to reduce API calls and improve speed
 - Support for cryptocurrency analysis
 - Portfolio tracking features
-- More technical indicators (Bollinger Bands, Stochastic)
-- Automated alerts and notifications
+- More technical indicators (Stochastic, Fibonacci retracements)
+- Chart drawing tools (trend lines, annotations)
+- Price alerts and notifications
 - Export to Excel format
+- Dark/light theme toggle
+- Mobile-optimized layout
