@@ -16,6 +16,16 @@ This is a comprehensive Stock Chart Analysis application built with Streamlit th
 - **Volume MA**: Volume moving average overlay on secondary axis
 - **Collapsible Sections**: Financial data moved to expandable sections below chart for cleaner layout
 
+### Professional Trading Platform UI (Latest):
+**TradingView-Style Interface** - Redesigned to match professional charting platforms:
+- **3-Column Layout**: Watchlist sidebar | Main chart area | Quick Stats panel
+- **Watchlist Feature**: Save favorite stocks, one-click switching between charts
+- **Top Toolbar**: Timeframe buttons (1D-MAX) in horizontal layout for quick access
+- **Quick Indicators**: One-click toggles for Bollinger Bands, RSI, MACD, Volume MA, Moving Averages
+- **Advanced Settings**: Detailed indicator configuration in collapsible expander
+- **Quick Stats Panel**: Essential metrics (Market Cap, P/E, Div Yield, Beta) always visible
+- **Session State**: Maintains selected ticker, timeframe, and chart preferences
+
 ### Previous Major Features:
 1. **Multiple Stock Comparison** - Compare 2-4 stocks side-by-side with normalized returns charts and performance metrics
 2. **Technical Indicators** - SMA, EMA, RSI, MACD, and Bollinger Bands with customizable parameters
@@ -31,36 +41,65 @@ Preferred communication style: Simple, everyday language.
 
 ## Chart Analysis (Primary Tab)
 
+### Professional Layout
+- **Left Sidebar - Watchlist (1.5 units)**:
+  - Default stocks: AAPL, MSFT, GOOGL, TSLA
+  - Click any stock to instantly switch charts
+  - Add new symbols to watchlist
+  - Remove unwanted symbols
+  - Persistent across session using st.session_state
+
+- **Main Chart Area (6 units)**:
+  - Large interactive chart as primary focus
+  - Top toolbar with all essential controls
+  - Advanced settings in collapsible sections
+  - Statistics and data exports below
+
+- **Right Sidebar - Quick Stats (1.5 units)**:
+  - Market Cap
+  - P/E Ratio
+  - Dividend Yield
+  - Beta
+  - Always visible for quick reference
+
 ### Chart Display
 - **Large, interactive charts** as the main focus with adjustable height (400-1200px)
 - **3 Chart Types**: Line (default), Candlestick with OHLC, and Area chart with gradient fill
 - **9 Time Periods**: 1 Day, 1 Week, 1 Month, 3 Months, 6 Months, 1 Year, 2 Years, 5 Years, Max
 - **Real-time price updates** with color-coded change indicators (🟢 up / 🔴 down)
 
-### Moving Averages
-- **SMA 20, 50, 200**: Standard simple moving averages for trend analysis
-- **EMA 12, 26**: Exponential moving averages for faster response
-- **Custom SMA/EMA**: User-defined periods (2-500 days)
-- **Multiple overlays**: Display up to 6 moving averages simultaneously with distinct colors
-- **Works on all chart types**: Overlays properly on line, candlestick, and area charts
+### Top Toolbar Controls
+- **Timeframe Buttons**: Horizontal row of 9 buttons for instant period switching
+  - Active button highlighted with primary styling
+  - Session state tracking for selected period
+- **Chart Type Selector**: Dropdown to switch between Line, Candlestick, Area
+- **Height Slider**: Adjust chart height from 400 to 1200 pixels
 
-### Technical Indicators
-- **Bollinger Bands**: Volatility bands with adjustable period (5-50) and standard deviation (1.0-3.0)
-- **RSI (Relative Strength Index)**: Momentum oscillator with overbought (70) / oversold (30) lines
-- **MACD**: Moving Average Convergence Divergence with signal line and histogram
-- **Volume MA**: 20-period moving average overlay on volume bars
+### Indicators Section
+Quick toggle checkboxes in horizontal layout:
+- **Bollinger Bands**: Volatility bands with adjustable parameters
+- **RSI**: Relative Strength Index oscillator
+- **MACD**: Moving Average Convergence Divergence
+- **Volume MA**: 20-period moving average for volume
+- **Moving Averages**: Quick toggle for standard MAs
+
+### Advanced Indicator Settings
+Collapsible expander with detailed controls:
+- **Moving Averages**: 
+  * SMA 20, 50, 200: Standard simple moving averages
+  * EMA 12, 26: Exponential moving averages
+  * Custom SMA/EMA: User-defined periods (2-500 days)
+  * Display up to 6 moving averages simultaneously
+  
+- **Bollinger Bands Settings**:
+  * Period slider: 5-50 (default 20)
+  * Standard deviation slider: 1.0-3.0 (default 2.0)
+  * Shaded area between bands
 
 ### Volume Display
 - **Integrated volume bars** on secondary y-axis below price chart
 - **Color-coded**: Green (price up) / Red (price down) matching candle direction
 - **Volume MA overlay**: Optional 20-period SMA for volume trend analysis
-
-### Chart Controls (Sidebar)
-- **Time Period Selection**: Radio buttons for quick period switching
-- **Chart Type Toggle**: Switch between Line, Candlestick, and Area instantly
-- **Indicator Toggles**: Easy checkboxes for all indicators
-- **Customization Sliders**: Fine-tune indicator parameters (BB period/std, chart height)
-- **Organized Sections**: Grouped by function for intuitive navigation
 
 ### Period Statistics
 Five key metrics displayed below chart:
@@ -96,14 +135,20 @@ Five key metrics displayed below chart:
 - **Pros**: Fast prototyping, built-in widgets, automatic reactivity, Python-native
 - **Cons**: Limited customization compared to traditional web frameworks, requires Python runtime
 
-**Layout Structure**: Chart-focused design with sidebar controls
-- **Main Tab**: "Chart Analysis" - Primary charting interface
-- **Secondary Tab**: "Compare Stocks" - Multi-stock comparison
-- **Sidebar**: All chart controls (time period, chart type, indicators, settings)
-- **Compact Header**: Stock input and essential info in single row
-- **Large Chart Area**: Main content with maximized chart display
-- **Expandable Sections**: Detailed data in collapsible sections below chart
+**Layout Structure**: Professional 3-column trading platform design
+- **Left Sidebar**: Watchlist panel for quick stock switching
+- **Main Area**: Chart-first interface with top toolbar controls
+- **Right Sidebar**: Quick Stats panel for essential metrics
+- **Top Toolbar**: Timeframe buttons, chart type, indicator toggles
+- **Advanced Settings**: Collapsible expander for detailed configuration
 - **Wide Layout**: Full browser width utilization for better visualization
+
+**Session State Management**:
+- `watchlist`: List of favorite ticker symbols (persistent)
+- `current_ticker`: Currently displayed stock
+- `selected_period`: Active timeframe (1D, 1W, 1M, etc.)
+- `chart_type`: Selected chart type (Line, Candlestick, Area)
+- Maintains user preferences throughout session
 
 ## Data Layer
 
@@ -181,16 +226,18 @@ Five key metrics displayed below chart:
 - Python 3.11 runtime
 - No database dependencies (data fetched on-demand from external API)
 - No authentication or user management system
-- Stateless application design
+- Stateless application design (except session state for UI preferences)
 - Server runs on port 5000
 
 # Implementation Notes
 
-## UI/UX Design
-- **Chart-first approach**: Main content is the chart, everything else is supporting
-- **Sidebar organization**: All controls grouped logically by function
-- **Clean header**: Minimal info (symbol, company, price) in compact format
-- **Collapsible details**: Financial data accessible but not cluttering main view
+## UI/UX Design - Professional Trading Platform
+- **TradingView-inspired**: Industry-standard layout familiar to traders
+- **3-column structure**: Watchlist | Chart | Quick Stats
+- **Top toolbar**: Quick access to frequently used controls (timeframe, chart type, indicators)
+- **Advanced settings**: Detailed configuration in collapsible sections
+- **One-click switching**: Watchlist enables rapid stock comparison
+- **Session persistence**: Maintains user selections throughout session
 - **Color indicators**: Emoji-based visual cues for price direction (🟢/🔴)
 
 ## Chart Rendering
@@ -199,6 +246,15 @@ Five key metrics displayed below chart:
 - **Secondary y-axis**: Volume shares space with price without obscuring data
 - **Legend positioning**: Horizontal at top-right for easy reference
 - **Grid styling**: Light gray (rgba) for subtle background guides
+- **Multiple MA support**: Up to 6 moving averages with distinct colors
+
+## Watchlist Implementation
+- **Session state storage**: st.session_state.watchlist (list)
+- **Default stocks**: ['AAPL', 'MSFT', 'GOOGL', 'TSLA']
+- **Add functionality**: Text input + button to add new symbols
+- **Remove functionality**: Selectbox + button to remove symbols
+- **Auto-switch**: Clicking watchlist item updates current_ticker and triggers rerun
+- **Persistence**: Watchlist maintained throughout session
 
 ## Error Handling
 - Try-except blocks around all external API calls
@@ -212,14 +268,18 @@ Five key metrics displayed below chart:
 - Multiple API calls for comparison feature (one per stock)
 - Financial statements are separate API calls
 - Large charts may impact performance on older devices
+- Session state prevents unnecessary data refetches
 
 ## Future Enhancements (Potential)
 - Data caching to reduce API calls and improve speed
+- Persistent watchlist storage (database or file)
+- Drawing tools (trend lines, horizontal/vertical lines, annotations)
+- Chart pattern recognition
+- Price alerts and notifications
 - Support for cryptocurrency analysis
 - Portfolio tracking features
 - More technical indicators (Stochastic, Fibonacci retracements)
-- Chart drawing tools (trend lines, annotations)
-- Price alerts and notifications
 - Export to Excel format
 - Dark/light theme toggle
 - Mobile-optimized layout
+- Multi-chart layouts (2x2, 3x1 grids)
