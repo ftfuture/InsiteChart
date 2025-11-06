@@ -1,0 +1,312 @@
+"""
+Main FastAPI application for InsiteChart platform.
+
+This module sets up the FastAPI application with all necessary middleware,
+routes, and configuration for the InsiteChart backend API.
+"""
+
+import logging
+import time
+from contextlib import asynccontextmanager
+from typing import Dict, Any
+
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+
+from .api.routes import router as api_router
+from .api.websocket_routes import router as websocket_router
+from .api.security_routes import router as security_router
+from .cache.unified_cache import UnifiedCacheManager
+from .services.unified_service import UnifiedService
+from .services.stock_service import StockService
+from .services.sentiment_service import SentimentService
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
+# Global services
+cache_manager: UnifiedCacheManager = None
+unified_service: UnifiedService = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle."""
+    # Startup
+    logger.info("Starting InsiteChart API server...")
+    
+    # Initialize services
+    global cache_manager, unified_service
+    
+    try:
+        # Initialize cache manager
+        cache_manager = UnifiedCacheManager()
+        await cache_manager.initialize()
+        logger.info("Cache manager initialized")
+        
+        # Initialize stock service
+        stock_service = StockService()
+        logger.info("Stock service initialized")
+        
+        # Initialize sentiment service
+        sentiment_service = SentimentService()
+        logger.info("Sentiment service initialized")
+        
+        # Initialize unified service
+        unified_service = UnifiedService(stock_service, sentiment_service, cache_manager)
+        logger.info("Unified service initialized")
+        
+        # Initialize notification service
+        from .services.realtime_notification_service import RealtimeNotificationService
+        notification_service = RealtimeNotificationService(cache_manager)
+        await notification_service.start()
+        logger.info("Notification service initialized")
+        
+        # Initialize security service
+        from .services.security_service import SecurityService
+        security_service = SecurityService(cache_manager)
+        await security_service.start()
+        logger.info("Security service initialized")
+        
+        # Store services in app state for dependency injection
+        app.state.cache_manager = cache_manager
+        app.state.unified_service = unified_service
+        app.state.notification_service = notification_service
+        app.state.security_service = security_service
+        
+        logger.info("InsiteChart API server started successfully")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize services: {str(e)}")
+        raise
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down InsiteChart API server...")
+    
+    try:
+        # Stop notification service
+        if hasattr(app.state, 'notification_service') and app.state.notification_service:
+            await app.state.notification_service.stop()
+            logger.info("Notification service stopped")
+        
+        # Stop security service
+        if hasattr(app.state, 'security_service') and app.state.security_service:
+            await app.state.security_service.stop()
+            logger.info("Security service stopped")
+        
+        if cache_manager:
+            await cache_manager.close()
+            logger.info("Cache manager closed")
+        
+        logger.info("InsiteChart API server shut down successfully")
+        
+    except Exception as e:
+        logger.error(f"Error during shutdown: {str(e)}")
+
+
+# Create FastAPI application
+app = FastAPI(
+    title="InsiteChart API",
+    description="Comprehensive financial data and sentiment analysis platform",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
+
+
+# Add middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# Request timing middleware
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """Add processing time header to responses."""
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
+
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log incoming requests."""
+    start_time = time.time()
+    
+    # Log request
+    logger.info(
+        f"Request: {request.method} {request.url.path} "
+        f"from {request.client.host if request.client else 'unknown'}"
+    )
+    
+    response = await call_next(request)
+    
+    # Log response
+    process_time = time.time() - start_time
+    logger.info(
+        f"Response: {response.status_code} "
+        f"in {process_time:.4f}s"
+    )
+    
+    return response
+
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle uncaught exceptions."""
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": "Internal server error",
+            "message": "An unexpected error occurred",
+            "timestamp": time.time()
+        }
+    )
+
+
+# Include API routes
+app.include_router(api_router, prefix="/api/v1")
+app.include_router(websocket_router, prefix="/api/v1")
+app.include_router(security_router, prefix="/api/v1")
+
+
+# Root endpoint
+@app.get("/", tags=["Root"])
+async def root():
+    """Root endpoint with basic API information."""
+    return {
+        "name": "InsiteChart API",
+        "version": "1.0.0",
+        "description": "Comprehensive financial data and sentiment analysis platform",
+        "docs": "/docs",
+        "health": "/api/v1/health",
+        "timestamp": time.time()
+    }
+
+
+# Custom OpenAPI schema
+def custom_openapi():
+    """Generate custom OpenAPI schema."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="InsiteChart API",
+        version="1.0.0",
+        description="Comprehensive financial data and sentiment analysis platform",
+        routes=app.routes,
+    )
+    
+    # Add custom schema information
+    openapi_schema["info"]["x-logo"] = {
+        "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
+    }
+    
+    # Add security schemes
+    openapi_schema["components"]["securitySchemes"] = {
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
+
+# Health check endpoint (outside versioned API)
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Simple health check endpoint."""
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "version": "1.0.0"
+    }
+
+
+# Metrics endpoint
+@app.get("/metrics", tags=["Metrics"])
+async def get_metrics():
+    """Get basic application metrics."""
+    try:
+        cache_stats = {}
+        if cache_manager:
+            cache_stats = await cache_manager.get_cache_stats()
+        
+        return {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "cache_stats": cache_stats,
+            "uptime": time.time()  # In production, track actual uptime
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting metrics: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Failed to get metrics",
+                "timestamp": time.time()
+            }
+        )
+
+
+# Startup event (legacy, kept for compatibility)
+@app.on_event("startup")
+async def startup_event():
+    """Legacy startup event."""
+    logger.info("InsiteChart API startup event triggered")
+
+
+# Shutdown event (legacy, kept for compatibility)
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Legacy shutdown event."""
+    logger.info("InsiteChart API shutdown event triggered")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    # Run the application
+    uvicorn.run(
+        "backend.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )
