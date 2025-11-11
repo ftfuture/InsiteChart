@@ -6,7 +6,7 @@
 
 ### 핵심 스펙문서
 - [01-introduction.md](./01-introduction.md) - 프로젝트 개요 및 목표
-- [02-system-architecture.md](./02-system-architecture.md) - 통합 시스템 아키텍처
+- [02-system-architecture.md](./02-system-architecture.md) - 기본 시스템 아키텍처
 - [03-api-integration.md](./03-api-integration.md) - API 연동 및 데이터 소스
 - [04-performance-scalability.md](./04-performance-scalability.md) - 성능 및 확장성
 - [05-security-privacy.md](./05-security-privacy.md) - 보안 및 개인정보 보호
@@ -16,13 +16,13 @@
 - [09-implementation-plan.md](./09-implementation-plan.md) - 구현 계획
 - [10-appendix.md](./10-appendix.md) - 부록
 
-### 통합 시스템 설계
-- [11-integrated-data-model.md](./11-integrated-data-model.md) - 통합 데이터 모델
+### 기본 시스템 설계
+- [11-integrated-data-model.md](./11-integrated-data-model.md) - 기본 데이터 모델
 - [12-api-gateway-routing.md](./12-api-gateway-routing.md) - API 게이트웨이 및 라우팅
-- [13-unified-caching-system.md](./13-unified-caching-system.md) - 통합 캐싱 시스템
-- [14-realtime-data-sync.md](./14-realtime-data-sync.md) - 실시간 데이터 동기화
-- [15-unified-dashboard-ux.md](./15-unified-dashboard-ux.md) - 통합 대시보드 UI/UX
-- [16-correlation-analysis.md](./16-correlation-analysis.md) - 상관관계 분석 기능
+- [13-unified-caching-system.md](./13-unified-caching-system.md) - 기본 캐싱 시스템
+- [14-realtime-data-sync.md](./14-realtime-data-sync.md) - 기본 데이터 동기화
+- [15-unified-dashboard-ux.md](./15-unified-dashboard-ux.md) - 기본 대시보드 UI/UX
+- [16-correlation-analysis.md](./16-correlation-analysis.md) - 기본 상관관계 분석 기능
 - [21-ui-ux-feature-breakdown.md](./21-ui-ux-feature-breakdown.md) - UI/UX 기능별 상세 분석
 - [22-ui-workflow-analysis.md](./22-ui-workflow-analysis.md) - UI 엘리먼트 흐름 분석
 - [23-ui-database-mapping.md](./23-ui-database-mapping.md) - UI 엘리먼트와 데이터베이스 매핑 분석
@@ -39,10 +39,10 @@
 이 스펙문서는 다음 목표로 작성되었습니다:
 
 1. **명확한 비전 제시**: 프로젝트의 방향성과 목표를 명확히 정의
-2. **기술적 방향성 제공**: 아키텍처와 기술 스택에 대한 가이드 제공
+2. **기술적 방향성 제공**: 기본 아키텍처와 기술 스택에 대한 가이드 제공
 3. **실행 계획 수립**: 단계별 구현 계획과 마일스톤 제시
-4. **품질 보장 기준**: 테스트, 보안, 성능 등 품질 기준 정의
-5. **지속 가능한 개발**: 장기적인 유지보수와 확장성 고려
+4. **품질 보장 기준**: 기본 테스트, 보안, 성능 등 품질 기준 정의
+5. **지속 가능한 개발**: 장기적인 유지보수와 기본 확장성 고려
 
 ## 사용 방법
 
@@ -50,7 +50,7 @@
 
 ### 기초 스펙문서 (필수)
 1. 프로젝트 개요 및 목표 (01-introduction.md)
-2. 시스템 아키텍처 (02-system-architecture.md)
+2. 기본 시스템 아키텍처 (02-system-architecture.md)
 3. API 연동 및 데이터 소스 (03-api-integration.md)
 4. 성능 및 확장성 (04-performance-scalability.md)
 5. 보안 및 개인정보 보호 (05-security-privacy.md)
@@ -60,13 +60,13 @@
 9. 구현 계획 (09-implementation-plan.md)
 10. 부록 (10-appendix.md)
 
-### 통합 시스템 설계 (권장)
-11. 통합 데이터 모델 (11-integrated-data-model.md)
+### 기본 시스템 설계 (권장)
+11. 기본 데이터 모델 (11-integrated-data-model.md)
 12. API 게이트웨이 및 라우팅 (12-api-gateway-routing.md)
-13. 통합 캐싱 시스템 (13-unified-caching-system.md)
-14. 실시간 데이터 동기화 (14-realtime-data-sync.md)
-15. 통합 대시보드 UI/UX (15-unified-dashboard-ux.md)
-16. 상관관계 분석 기능 (16-correlation-analysis.md)
+13. 기본 캐싱 시스템 (13-unified-caching-system.md)
+14. 기본 데이터 동기화 (14-realtime-data-sync.md)
+15. 기본 대시보드 UI/UX (15-unified-dashboard-ux.md)
+16. 기본 상관관계 분석 기능 (16-correlation-analysis.md)
 
 ### 구현 계획 및 검토 (구현 전 필수)
 17. 최종 구현 로드맵 (17-final-implementation-roadmap.md)

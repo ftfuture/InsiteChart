@@ -11,15 +11,39 @@ from datetime import datetime, timedelta
 import logging
 import statistics
 import math
+import pandas as pd
+from dataclasses import dataclass
 
 from ..models.unified_models import (
-    UnifiedStockData, 
-    SearchQuery, 
+    UnifiedStockData,
+    SearchQuery,
     SearchResult,
     StockType,
-    SentimentSource
+    SentimentSource,
+    UnifiedDataRequest
 )
 from ..cache.unified_cache import UnifiedCacheManager
+from .realtime_data_collector import DataSource
+
+
+@dataclass
+class UnifiedDataResponse:
+    """Unified data response model."""
+    success: bool
+    data: Optional[Any] = None
+    error: Optional[str] = None
+    timestamp: datetime = None
+    metadata: Optional[Dict[str, Any]] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'success': self.success,
+            'data': self.data,
+            'error': self.error,
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'metadata': self.metadata
+        }
 
 
 class UnifiedService:
@@ -171,6 +195,10 @@ class UnifiedService:
                     if sentiment_data:
                         unified_stock.overall_sentiment = sentiment_data.get('overall_sentiment')
                         unified_stock.mention_count_24h = sentiment_data.get('mention_count_24h')
+                        unified_stock.mention_count_1h = sentiment_data.get('mention_count_1h')
+                        unified_stock.positive_mentions = sentiment_data.get('positive_mentions')
+                        unified_stock.negative_mentions = sentiment_data.get('negative_mentions')
+                        unified_stock.neutral_mentions = sentiment_data.get('neutral_mentions')
                         unified_stock.trending_status = sentiment_data.get('trending_status', False)
                         unified_stock.trend_score = sentiment_data.get('trend_score')
                         
@@ -284,11 +312,19 @@ class UnifiedService:
         """Get major market indices data."""
         try:
             indices_symbols = ['^GSPC', '^DJI', '^IXIC', '^RUT']
-            indices_data = []
             
-            for symbol in indices_symbols:
-                stock_data = await self.get_stock_data(symbol, include_sentiment=False)
-                if stock_data:
+            # Fetch all indices in parallel
+            tasks = [
+                self.get_stock_data(symbol, include_sentiment=False)
+                for symbol in indices_symbols
+            ]
+            
+            stock_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            indices_data = []
+            for i, symbol in enumerate(indices_symbols):
+                stock_data = stock_results[i]
+                if stock_data and not isinstance(stock_data, Exception):
                     indices_data.append({
                         'symbol': symbol,
                         'name': stock_data.company_name,
@@ -373,27 +409,29 @@ class UnifiedService:
             if len(symbols) > 10:
                 raise ValueError("Maximum 10 symbols can be compared at once")
             
-            # Get stock data for all symbols
+            # Get stock data and historical data in parallel for better performance
             stock_tasks = [
                 self.get_stock_data(symbol, include_sentiment)
                 for symbol in symbols
             ]
             
-            stock_results = await asyncio.gather(*stock_tasks, return_exceptions=True)
-            
-            # Filter successful results
-            valid_stocks = [
-                stock for stock in stock_results 
-                if stock is not None and not isinstance(stock, Exception)
-            ]
-            
-            # Get historical data for comparison
             historical_tasks = [
                 self.stock_service.get_historical_data(symbol, period)
                 for symbol in symbols
             ]
             
-            historical_results = await asyncio.gather(*historical_tasks, return_exceptions=True)
+            # Execute all tasks in parallel
+            all_results = await asyncio.gather(*stock_tasks, *historical_tasks, return_exceptions=True)
+            
+            # Split results back into stock and historical data
+            stock_results = all_results[:len(symbols)]
+            historical_results = all_results[len(symbols):]
+            
+            # Filter successful results
+            valid_stocks = [
+                stock for stock in stock_results
+                if stock is not None and not isinstance(stock, Exception)
+            ]
             
             # Calculate performance metrics
             comparison_data = {
@@ -426,6 +464,7 @@ class UnifiedService:
                         performance['sentiment_score'] = stock.overall_sentiment
                         performance['mention_count_24h'] = stock.mention_count_24h
                         performance['trending_status'] = stock.trending_status
+                        performance['trend_score'] = stock.trend_score
                     
                     comparison_data['performance_metrics'][stock.symbol] = performance
             
@@ -578,9 +617,16 @@ class UnifiedService:
     def _calculate_price_correlation(self, hist1, hist2) -> float:
         """Calculate price correlation between two stocks."""
         try:
-            # Get closing prices
-            prices1 = hist1['Close'].dropna()
-            prices2 = hist2['Close'].dropna()
+            # Handle DataFrame or dict input
+            if hasattr(hist1, 'get'):
+                prices1 = hist1.get('Close', pd.Series()).dropna()
+            else:
+                prices1 = hist1['Close'].dropna()
+            
+            if hasattr(hist2, 'get'):
+                prices2 = hist2.get('Close', pd.Series()).dropna()
+            else:
+                prices2 = hist2['Close'].dropna()
             
             # Align dates
             common_dates = prices1.index.intersection(prices2.index)
@@ -591,9 +637,20 @@ class UnifiedService:
             aligned_prices2 = prices2.loc[common_dates]
             
             # Calculate correlation
-            correlation = aligned_prices1.corr(aligned_prices2).iloc[0, 0]
+            correlation = aligned_prices1.corr(aligned_prices2)
             
-            return round(correlation, 3) if not math.isnan(correlation) else 0.0
+            # Handle both scalar and matrix results
+            if hasattr(correlation, 'iloc'):
+                # DataFrame result
+                if correlation.shape == (1, 1):
+                    corr_value = correlation.iloc[0, 0]
+                else:
+                    corr_value = correlation.values[0, 0] if correlation.values.size > 0 else 0.0
+            else:
+                # Scalar result
+                corr_value = correlation
+            
+            return round(float(corr_value), 3) if not math.isnan(corr_value) else 0.0
             
         except Exception as e:
             self.logger.error(f"Error calculating price correlation: {str(e)}")
@@ -770,11 +827,19 @@ class UnifiedService:
             
             # Sample some stocks to check data completeness
             sample_symbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN']
-            quality_checks = []
             
-            for symbol in sample_symbols:
-                stock_data = await self.get_stock_data(symbol, include_sentiment=True)
-                if stock_data:
+            # Fetch all sample stocks in parallel
+            sample_tasks = [
+                self.get_stock_data(symbol, include_sentiment=True)
+                for symbol in sample_symbols
+            ]
+            
+            sample_results = await asyncio.gather(*sample_tasks, return_exceptions=True)
+            
+            quality_checks = []
+            for i, symbol in enumerate(sample_symbols):
+                stock_data = sample_results[i]
+                if stock_data and not isinstance(stock_data, Exception):
                     completeness = self._calculate_data_completeness(stock_data)
                     quality_checks.append({
                         'symbol': symbol,

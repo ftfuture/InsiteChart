@@ -23,6 +23,16 @@ class InsiteChartAPIClient:
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         })
+        
+        # Store auth token
+        self.auth_token = None
+    
+    def set_auth_token(self, token: str):
+        """Set authentication token for API requests."""
+        self.auth_token = token
+        self.session.headers.update({
+            'Authorization': f'Bearer {token}'
+        })
     
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make HTTP request to API."""

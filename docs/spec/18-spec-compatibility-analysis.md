@@ -104,21 +104,54 @@ class UnifiedStockData:
     # 가격 정보
     current_price: Optional[float]
     market_cap: Optional[float]
+    price_change_24h: Optional[float] = None
+    price_change_pct_24h: Optional[float] = None
     
     # 검색 관련
     relevance_score: float = 0.0
     search_count: int = 0
+    last_searched: Optional[datetime] = None
     
-    # 센티먼트 관련
-    sentiment_score: Optional[float] = None
+    # 센티먼트 관련 (표준화된 범위: -100~+100)
+    sentiment_score: Optional[float] = None  # -100~+100 범위
+    sentiment_history: List[SentimentPoint] = field(default_factory=list)
     mention_count_24h: int = 0
+    mention_count_7d: int = 0
     trending_status: bool = False
     trend_score: Optional[float] = None
+    trend_start_time: Optional[datetime] = None
+    
+    # 상세 정보
+    mention_details: List[MentionDetail] = field(default_factory=list)
+    community_breakdown: Dict[str, int] = field(default_factory=dict)
+    investment_style_distribution: Dict[str, float] = field(default_factory=dict)
     
     # 메타데이터
     last_updated: datetime
-    data_sources: List[str]
-```
+    data_sources: List[str] = field(default_factory=list)
+    data_quality_score: float = 1.0  # 0~1 범위
+
+@dataclass
+class SentimentPoint:
+    timestamp: datetime
+    sentiment_score: float  # -100~+100
+    mention_count: int
+    source: str  # reddit, twitter, etc.
+    confidence: float  # 0~1 범위
+
+@dataclass
+class MentionDetail:
+    id: str
+    text: str
+    author: str
+    community: str
+    upvotes: int
+    downvotes: int
+    timestamp: datetime
+    investment_style: str
+    sentiment_score: float
+    confidence: float
+    is_spam: bool = False
 
 ### 3.3 호환성 문제점
 
@@ -139,32 +172,65 @@ class UnifiedStockData:
 ```python
 @dataclass
 class UnifiedStockData:
-    # 기존 필드 유지
+    # 기본 정보
     symbol: str
     company_name: str
     stock_type: str
     exchange: str
     sector: str
     industry: str
+    
+    # 가격 정보
     current_price: Optional[float]
     market_cap: Optional[float]
-    relevance_score: float = 0.0
+    price_change_24h: Optional[float] = None
+    price_change_pct_24h: Optional[float] = None
     
-    # 새로운 필드 추가
+    # 검색 관련
+    relevance_score: float = 0.0
     search_count: int = 0
+    last_searched: Optional[datetime] = None
+    
+    # 센티먼트 관련 (표준화된 범위: -100~+100)
     sentiment_score: Optional[float] = None  # -100~+100 범위
+    sentiment_history: List[SentimentPoint] = field(default_factory=list)
     mention_count_24h: int = 0
+    mention_count_7d: int = 0
     trending_status: bool = False
     trend_score: Optional[float] = None
+    trend_start_time: Optional[datetime] = None
     
-    # 누락된 필드 추가
+    # 상세 정보
     mention_details: List[MentionDetail] = field(default_factory=list)
     community_breakdown: Dict[str, int] = field(default_factory=dict)
     investment_style_distribution: Dict[str, float] = field(default_factory=dict)
     
     # 메타데이터
     last_updated: datetime
-    data_sources: List[str]
+    data_sources: List[str] = field(default_factory=list)
+    data_quality_score: float = 1.0  # 0~1 범위
+
+@dataclass
+class SentimentPoint:
+    timestamp: datetime
+    sentiment_score: float  # -100~+100
+    mention_count: int
+    source: str  # reddit, twitter, etc.
+    confidence: float  # 0~1 범위
+
+@dataclass
+class MentionDetail:
+    id: str
+    text: str
+    author: str
+    community: str
+    upvotes: int
+    downvotes: int
+    timestamp: datetime
+    investment_style: str
+    sentiment_score: float
+    confidence: float
+    is_spam: bool = False
 
 @dataclass
 class MentionDetail:
@@ -669,20 +735,20 @@ graph LR
 
 #### 12.2.2 구체적 실행 계획
 
-**Phase 1: 호환성 확보 (2주)**
-- 데이터 모델 확장 및 필드 추가
-- API 래퍼 구현으로 하위 호환성 확보
-- 어댑터 패턴으로 기존 컴포넌트 연결
+**Phase 1: 호환성 확보 (2주) ✅ 완료**
+- 데이터 모델 확장 및 필드 추가 ✅ 완료
+- API 래퍼 구현으로 하위 호환성 확보 ⏳ 대기
+- 어댑터 패턴으로 기존 컴포넌트 연결 ⏳ 대기
 
-**Phase 2: 점진적 통합 (8주)**
-- 통합 데이터 모델 도입
-- 공통 컴포넌트 통합 (캐시, 에러 처리)
-- API 게이트웨이 기본 구현
+**Phase 2: 점진적 통합 (8주) ⏳ 진행 중**
+- 통합 데이터 모델 도입 ✅ 완료
+- 공통 컴포넌트 통합 (캐시, 에러 처리) ⏳ 대기
+- API 게이트웨이 기본 구현 ⏳ 대기
 
-**Phase 3: 완전 통합 (9주)**
-- 나머지 컴포넌트 통합
-- 성능 최적화 및 보안 강화
-- 통합 테스트 및 배포
+**Phase 3: 완전 통합 (9주) ⏳ 대기**
+- 나머지 컴포넌트 통합 ⏳ 대기
+- 성능 최적화 및 보안 강화 ⏳ 대기
+- 통합 테스트 및 배포 ⏳ 대기
 
 #### 12.2.3 위험 완화 전략
 
@@ -693,10 +759,46 @@ graph LR
 
 ### 12.3 최종 권장사항
 
-1. **즉시 조치 필요**: 데이터 모델 호환성 문제 해결
-2. **단계적 접근**: 빅뱅 방식 접근 지양
-3. **지속적 검증**: 각 단계별 호환성 테스트
-4. **문서화**: 마이그레이션 가이드 상세 작성
-5. **팀 교육**: 새로운 기술 스택 교육 계획
+1. **즉시 조치 필요**: 데이터 모델 호환성 문제 해결 ✅ 완료
+2. **단계적 접근**: 빅뱅 방식 접근 지양 ⏳ 진행 중
+3. **지속적 검증**: 각 단계별 호환성 테스트 ⏳ 진행 중
+4. **문서화**: 마이그레이션 가이드 상세 작성 ⏳ 진행 중
+5. **팀 교육**: 새로운 기술 스택 교육 계획 ⏳ 대기
+
+### 12.4 구현된 해결책
+
+#### 12.4.1 데이터 모델 표준화 ✅ 완료
+- **UnifiedStockData 모델 확장**:
+  - SentimentPoint 및 MentionDetail 모델 추가
+  - 시계열 데이터 필드 추가 (timestamps, prices, volumes, mentions)
+  - 표준화된 센티먼트 점수 범위 (-100~+100) 적용
+  - 커뮤니티 분포 및 투자 스타일 분포 필드 추가
+
+- **데이터 변환 레이어 구현** (backend/services/data_transformer.py):
+  - UnifiedDataTransformer 클래스 구현
+  - 기존 StockResult, StockMention 모델에서 UnifiedStockData로 변환
+  - 데이터 병합 로직 구현
+  - 센티먼트 점수 정규화 기능
+
+- **데이터 일관성 관리자 구현** (backend/services/data_consistency_manager.py):
+  - DataConsistencyStrategy 인터페이스 정의
+  - EventualConsistencyStrategy 및 StrongConsistencyStrategy 구현
+  - DataConsistencyManager 클래스 구현
+  - 데이터 무결성 검증 및 충돌 해결 기능
+
+#### 12.4.2 호환성 문제 해결 ✅ 완료
+- **데이터 필드 불일치 해결**:
+  - StockMention의 text, author, upvotes 필드를 MentionDetail로 통합
+  - investment_style 필드를 InvestmentStyle enum으로 표준화
+  - 모든 필드를 UnifiedStockData 모델에 통합
+
+- **데이터 타입 불일치 해결**:
+  - 센티먼트 점수 범위를 -100~+100으로 표준화
+  - normalize_sentiment_score 메서드로 다양한 소스 범위 지원
+
+- **API 시그니처 호환성**:
+  - to_dict() 및 from_dict() 메서드 확장
+  - 하위 호환성 유지를 위한 변환 로직
+  - JSON 직렬화/역직렬화 지원 강화
 
 이러한 호환성 분석을 통해 구현 전 잠재적 문제점을 사전에 식별하고 해결 전략을 수립할 수 있습니다. 이는 프로젝트의 성공 가능성을 크게 높이고 예상치 못한 문제를 방지하는 데 도움이 될 것입니다.

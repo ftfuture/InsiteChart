@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>InsiteChart Test Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .status-success {
+            color: #28a745;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .status-partial {
+            color: #ffc107;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .status-failed {
+            color: #dc3545;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .summary-item {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .summary-item h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        .summary-item p {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .test-details {
+            margin-bottom: 30px;
+        }
+        .test-suite {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .suite-header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .suite-content {
+            padding: 15px;
+            display: none;
+        }
+        .suite-header:hover {
+            background-color: #0056b3;
+        }
+        .test-case {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .test-case:last-child {
+            border-bottom: none;
+        }
+        .test-passed {
+            background-color: #d4edda;
+        }
+        .test-failed {
+            background-color: #f8d7da;
+        }
+        .test-error {
+            background-color: #f5c6cb;
+        }
+        .coverage-details {
+            margin-bottom: 30px;
+        }
+        .coverage-item {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+            margin-bottom: 10px;
+        }
+        .coverage-item h3 {
+            margin: 0 0 10px 0;
+            color: #28a745;
+        }
+        .coverage-item p {
+            margin: 0;
+            font-size: 16px;
+        }
+        .coverage-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .coverage-fill {
+            height: 100%;
+            background-color: #28a745;
+            transition: width 0.3s ease;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>InsiteChart Test Report</h1>
+            <p>Generated on 2025-11-10T16:42:27.676498</p>
+            <div class="status-failed">
+                Overall Status: FAILED
+            </div>
+        </div>
+        
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h3>Test Results</h3>
+                <p>Total Tests: 9</p>
+                <p>Passed: 0</p>
+                <p>Failed: 0</p>
+                <p>Errors: 9</p>
+                <p>Time: 4.81s</p>
+            </div>
+            <div class="summary-item">
+                <h3>Coverage</h3>
+                <p>Line Coverage: 0.0%</p>
+                <p>Branch Coverage: 0.0%</p>
+                <p>Complexity Coverage: 0.0%</p>
+            </div>
+        </div>
+        
+        <div class="test-details">
+            <h2>Test Suite Details</h2>
+    
+            <div class="test-suite">
+                <div class="suite-header" onclick="toggleSuite('pytest')">
+                    <h3>pytest</h3>
+                    <p>Tests: 9 | Failed: 0 | Time: 4.81s</p>
+                </div>
+                <div class="suite-content" id="pytest">
+        
+                    <div class="test-case test-error">
+                        <strong>tests.unit.api.test_auth_routes</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.api.test_feedback_routes</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.api.test_gateway</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.api.test_routes</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.api.test_security_routes</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.api.test_websocket_routes</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.services.test_advanced_sentiment_service</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.services.test_realtime_data_collector</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                    <div class="test-case test-error">
+                        <strong>tests.unit.services.test_unified_service</strong> ()
+                        <br>Status: error
+                        <br>Time: 0.000s
+                    </div>
+            
+                </div>
+            </div>
+        
+        </div>
+        
+        <div class="coverage-details">
+            <h2>Coverage Details</h2>
+    
+        </div>
+        
+        <script>
+            function toggleSuite(suiteName) {{
+                const content = document.getElementById(suiteName);
+                if (content.style.display === 'none') {{
+                    content.style.display = 'block';
+                }} else {{
+                    content.style.display = 'none';
+                }}
+            }}
+        </script>
+        
+        <div class="footer">
+            <p>Report generated by InsiteChart Test System</p>
+        </div>
+    </div>
+</body>
+</html>
+    

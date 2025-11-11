@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="2" failures="0" skipped="0" tests="2" time="5.617" timestamp="2025-11-09T08:24:00.847720+07:00" hostname="ftfutureui-MacBookPro.local"><testcase classname="" name="tests.performance.test_cache_performance" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/ftfuture/work/workspace/uService/insitechart/tests/performance/test_cache_performance.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/performance/test_cache_performance.py:15: in &lt;module&gt;
+    from backend.cache.enhanced_redis_cache import EnhancedRedisCacheManager
+E   ImportError: cannot import name 'EnhancedRedisCacheManager' from 'backend.cache.enhanced_redis_cache' (/Users/ftfuture/work/workspace/uService/insitechart/backend/cache/enhanced_redis_cache.py)</error></testcase><testcase classname="" name="tests.performance.test_database_performance" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/ftfuture/work/workspace/uService/insitechart/tests/performance/test_database_performance.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/performance/test_database_performance.py:14: in &lt;module&gt;
+    from backend.models.database_models import Stock, SentimentAnalysis, User, Watchlist
+E   ImportError: cannot import name 'SentimentAnalysis' from 'backend.models.database_models' (/Users/ftfuture/work/workspace/uService/insitechart/backend/models/database_models.py)</error></testcase></testsuite></testsuites>

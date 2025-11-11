@@ -1,0 +1,10 @@
+Suite,Test Case,Class,Status,Time,Failure Message
+pytest,tests.unit.api.test_auth_routes,,error,0.0,collection failure
+pytest,tests.unit.api.test_feedback_routes,,error,0.0,collection failure
+pytest,tests.unit.api.test_gateway,,error,0.0,collection failure
+pytest,tests.unit.api.test_routes,,error,0.0,collection failure
+pytest,tests.unit.api.test_security_routes,,error,0.0,collection failure
+pytest,tests.unit.api.test_websocket_routes,,error,0.0,collection failure
+pytest,tests.unit.services.test_advanced_sentiment_service,,error,0.0,collection failure
+pytest,tests.unit.services.test_realtime_data_collector,,error,0.0,collection failure
+pytest,tests.unit.services.test_unified_service,,error,0.0,collection failure

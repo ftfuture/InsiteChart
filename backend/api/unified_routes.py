@@ -8,21 +8,23 @@ with sentiment analysis for a comprehensive view.
 import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Request
 from fastapi.responses import JSONResponse
 
 from ..models.unified_models import (
-    UnifiedStockData, 
-    SearchQuery, 
+    UnifiedStockData,
+    SearchQuery,
     SearchResult,
     StockType
 )
 from ..services.unified_service import UnifiedService
-from .dependencies import get_unified_service, get_error_handler
-from .middleware import UnifiedErrorHandler, ErrorCategory, ErrorSeverity
+from ..middleware.auth_middleware import require_auth, optional_auth, require_permission
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Import the global service instances from routes.py
+from .routes import get_unified_service
 
 
 @router.get("/stocks/{symbol}", response_model=UnifiedStockData)
@@ -31,7 +33,8 @@ async def get_stock(
     include_sentiment: bool = Query(True, description="Include sentiment data"),
     include_historical: bool = Query(False, description="Include historical data"),
     period: str = Query("1y", description="Historical data period"),
-    unified_service: UnifiedService = Depends(get_unified_service)
+    unified_service: UnifiedService = Depends(get_unified_service),
+    user_data: Dict[str, Any] = Depends(optional_auth)
 ):
     """
     Get comprehensive stock information including sentiment data.
@@ -73,7 +76,8 @@ async def get_stock(
 async def search_stocks(
     query: SearchQuery,
     include_sentiment: bool = Query(True, description="Include sentiment data in results"),
-    unified_service: UnifiedService = Depends(get_unified_service)
+    unified_service: UnifiedService = Depends(get_unified_service),
+    user_data: Dict[str, Any] = Depends(optional_auth)
 ):
     """
     Search for stocks with integrated sentiment data.
@@ -109,7 +113,8 @@ async def get_trending_stocks(
     limit: int = Query(10, ge=1, le=50, description="Number of results"),
     timeframe: str = Query("24h", regex="^(1h|6h|24h|7d)$", description="Timeframe for trending analysis"),
     include_sentiment: bool = Query(True, description="Include sentiment details"),
-    unified_service: UnifiedService = Depends(get_unified_service)
+    unified_service: UnifiedService = Depends(get_unified_service),
+    user_data: Dict[str, Any] = Depends(optional_auth)
 ):
     """
     Get currently trending stocks with comprehensive data.
@@ -301,7 +306,8 @@ async def get_user_watchlist(
     user_id: str = Path(..., description="User ID"),
     include_sentiment: bool = Query(True, description="Include sentiment data"),
     include_alerts: bool = Query(True, description="Include price/sentiment alerts"),
-    unified_service: UnifiedService = Depends(get_unified_service)
+    unified_service: UnifiedService = Depends(get_unified_service),
+    user_data: Dict[str, Any] = Depends(require_auth)
 ):
     """
     Get user's watchlist with integrated data.
@@ -333,7 +339,8 @@ async def add_to_watchlist(
     category: Optional[str] = Query(None, description="Watchlist category"),
     alert_threshold: Optional[float] = Query(None, description="Price change alert threshold"),
     sentiment_alert: bool = Query(False, description="Enable sentiment alerts"),
-    unified_service: UnifiedService = Depends(get_unified_service)
+    unified_service: UnifiedService = Depends(get_unified_service),
+    user_data: Dict[str, Any] = Depends(require_auth)
 ):
     """
     Add stock to user's watchlist with alert preferences.

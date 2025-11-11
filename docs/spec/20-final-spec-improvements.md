@@ -17,7 +17,7 @@
 - **해결**: 단계적 성능 목표 설정 (섹션 3.2)
 
 ### 2.3 구현 일정 과소평가
-- **문제**: 복잡한 기능들의 개발 시간이 과소평가됨 (19주 → 30주)
+- **문제**: 복잡한 기능들의 개발 시간이 과소평가됨 (19주 → 28주)
 - **영향**: 프로젝트 지연 및 팀 과부하
 - **해결**: 현실적인 구현 계획 수립 (섹션 3.3)
 
@@ -771,37 +771,39 @@ class InfrastructureScalingStrategy:
 
 ```mermaid
 gantt
-    title InsiteChart 수정된 구현 계획
+    title InsiteChart 현실적인 구현 계획 (37주)
     dateFormat  YYYY-MM-DD
     section Phase 0: 준비
     개발 환경 구축           :p0-1, 2024-01-01, 1w
     프로젝트 구조 설정        :p0-2, after p0-1, 1w
     CI/CD 기본 설정          :p0-3, after p0-2, 1w
+    기술 스택 확정           :p0-4, after p0-3, 1w
     
     section Phase 1: 데이터 수집
-    주식 데이터 수집          :p1-1, after p0-3, 2w
+    주식 데이터 수집          :p1-1, after p0-4, 2w
     기본 센티먼트 수집        :p1-2, after p1-1, 2w
-    데이터 모델 구현          :p1-3, after p1-2, 1w
+    데이터 모델 구현          :p1-3, after p1-2, 2w
+    데이터 파이프라인 구축     :p1-4, after p1-3, 2w
     
     section Phase 2: 기본 API
-    기본 API 구현            :p2-1, after p1-3, 2w
+    기본 API 구현            :p2-1, after p1-4, 3w
     인증 시스템             :p2-2, after p2-1, 2w
-    간단한 UI               :p2-3, after p2-2, 2w
+    간단한 UI               :p2-3, after p2-2, 3w
     
     section Phase 3: 기능 확장
-    고급 검색 기능           :p3-1, after p2-3, 2w
-    센티먼트 분석           :p3-2, after p3-1, 2w
+    고급 검색 기능           :p3-1, after p2-3, 3w
+    센티먼트 분석           :p3-2, after p3-1, 3w
     기본 상관관계           :p3-3, after p3-2, 2w
     
     section Phase 4: 최적화
-    성능 최적화             :p4-1, after p3-3, 2w
-    테스트 강화              :p4-2, after p4-1, 2w
-    안정화                  :p4-3, after p4-2, 1w
+    성능 최적화             :p4-1, after p3-3, 3w
+    테스트 강화              :p4-2, after p4-1, 3w
+    안정화                  :p4-3, after p4-2, 2w
     
     section Phase 5: 배포
-    프로덕션 배포             :p5-1, after p4-3, 1w
-    모니터링 설정            :p5-2, after p5-1, 1w
-    운영 준비                :p5-3, after p5-2, 1w
+    프로덕션 배포             :p5-1, after p4-3, 2w
+    모니터링 설정            :p5-2, after p5-1, 2w
+    운영 준비                :p5-3, after p5-2, 2w
 ```
 
 ### 4.3 성공 지표 및 평가

@@ -1,0 +1,119 @@
+{
+  "timestamp": "2025-11-10T16:47:50.440978",
+  "test_results": {
+    "total_tests": 9,
+    "failures": 0,
+    "errors": 9,
+    "skipped": 0,
+    "time": 7.916,
+    "test_suites": [
+      {
+        "name": "pytest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 9,
+        "skipped": 0,
+        "time": 7.916,
+        "test_cases": [
+          {
+            "name": "tests.unit.api.test_auth_routes",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.api.test_feedback_routes",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.api.test_gateway",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.api.test_routes",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.api.test_security_routes",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.api.test_websocket_routes",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.services.test_advanced_sentiment_service",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.services.test_realtime_data_collector",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          },
+          {
+            "name": "tests.unit.services.test_unified_service",
+            "class": "",
+            "time": 0.0,
+            "status": "error",
+            "error": {
+              "message": "collection failure",
+              "type": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "coverage_data": {
+    "line_rate": 0.0,
+    "branch_rate": 0.0,
+    "complexity_rate": 0.0,
+    "packages": []
+  },
+  "overall_status": "failed"
+}

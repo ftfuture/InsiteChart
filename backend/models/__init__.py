@@ -10,13 +10,10 @@ from .unified_models import (
     SearchResult,
     StockType,
     SentimentSource,
-    SentimentData,
-    StockInfo,
-    HistoricalData,
-    MarketOverview,
-    WatchlistItem,
-    AlertConfig,
-    UserPreferences
+    SentimentResult,
+    StockMention,
+    User,
+    WatchlistItem
 )
 
 __all__ = [
@@ -25,11 +22,8 @@ __all__ = [
     "SearchResult",
     "StockType",
     "SentimentSource",
-    "SentimentData",
-    "StockInfo",
-    "HistoricalData",
-    "MarketOverview",
-    "WatchlistItem",
-    "AlertConfig",
-    "UserPreferences"
+    "SentimentResult",
+    "StockMention",
+    "User",
+    "WatchlistItem"
 ]

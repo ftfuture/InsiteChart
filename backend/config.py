@@ -7,7 +7,8 @@ database connections, API keys, and other platform settings.
 
 import os
 from typing import Optional, List
-from pydantic import BaseSettings, Field
+from pydantic import Field, ConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -69,6 +70,10 @@ class Settings(BaseSettings):
         default="your-secret-key-here-change-in-production",
         env="SECRET_KEY"
     )
+    jwt_secret_key: str = Field(
+        default="your-secret-key-change-in-production",
+        env="JWT_SECRET_KEY"
+    )
     algorithm: str = Field(default="HS256", env="ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
     
@@ -119,10 +124,18 @@ class Settings(BaseSettings):
         env="SUPPORTED_LOCALES"
     )
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    # Frontend Settings
+    backend_url: Optional[str] = Field(default="http://localhost:8000", env="BACKEND_URL")
+    api_base_url: Optional[str] = Field(default="http://localhost:8000/api/v1", env="API_BASE_URL")
+    
+    # Development Settings
+    testing: bool = Field(default=False, env="TESTING")
+    
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False
+    )
 
 
 # Create global settings instance

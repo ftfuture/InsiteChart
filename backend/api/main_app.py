@@ -19,10 +19,23 @@ from .stock_routes import router as stock_router
 from .sentiment_routes import router as sentiment_router
 from .unified_routes import router as unified_router
 from .auth_routes import router as auth_router
+from .correlation_routes import router as correlation_router
+from .ml_trend_routes import router as ml_trend_router
+from .auto_scaling_routes import router as auto_scaling_router
+from .monitoring_routes import router as monitoring_router
+from .resource_optimization_routes import router as resource_optimization_router
+from .gdpr_routes import router as gdpr_router
+from .threat_detection_routes import router as threat_detection_router
+from .data_encryption_routes import router as data_encryption_router
+from .distributed_data_collector_routes import router as distributed_data_collector_router
+from .timescale_routes import router as timescale_router
+from .automated_test_routes import router as automated_test_router
+from .i18n_routes import router as i18n_router
 from .middleware import setup_middleware, SecurityMiddleware
 from ..cache.unified_cache import UnifiedCacheManager
 from ..cache.redis_cache import RedisCacheManager
 from ..cache.memory_cache import MemoryCacheManager
+from .gateway import initialize_gateway, GatewayMiddleware
 
 
 # Configure logging
@@ -64,12 +77,39 @@ async def lifespan(app: FastAPI):
     # Store cache in app state
     app.state.cache_manager = UnifiedCacheManager(cache_backend)
     
+    # Initialize API Gateway
+    app.state.gateway = initialize_gateway(app.state.cache_manager)
+    
     # Initialize services
     from ..services.stock_service import StockService
     from ..services.sentiment_service import SentimentService
+    from ..services.correlation_analysis_service import CorrelationAnalysisService
+    from ..services.ml_trend_detection_service import MLTrendDetectionService
+    from ..services.auto_scaling_service import AutoScalingService
+    from ..services.gdpr_automation_service import GDPRAutomationService
+    from ..services.threat_detection_service import ThreatDetectionService
+    from ..services.data_encryption_service import DataEncryptionService
+    from ..services.distributed_data_collector import DistributedDataCollector
+    from ..services.timescale_service import TimescaleService
     
     app.state.stock_service = StockService(app.state.cache_manager)
     app.state.sentiment_service = SentimentService(app.state.cache_manager)
+    app.state.correlation_service = CorrelationAnalysisService(app.state.cache_manager)
+    app.state.ml_trend_service = MLTrendDetectionService(app.state.cache_manager)
+    app.state.auto_scaling_service = AutoScalingService(app.state.cache_manager)
+    app.state.gdpr_service = GDPRAutomationService(app.state.cache_manager)
+    app.state.threat_detection_service = ThreatDetectionService(app.state.cache_manager)
+    app.state.data_encryption_service = DataEncryptionService(app.state.cache_manager)
+    app.state.distributed_data_collector = DistributedDataCollector(app.state.cache_manager)
+    app.state.timescale_service = TimescaleService(app.state.cache_manager)
+    
+    # Initialize automated test service
+    from ..services.automated_test_service import AutomatedTestService
+    app.state.automated_test_service = AutomatedTestService(app.state.cache_manager)
+    
+    # Initialize i18n service
+    from ..services.i18n_service import I18nService
+    app.state.i18n_service = I18nService(app.state.cache_manager)
     
     logger.info("InsiteChart API started successfully")
     
@@ -123,6 +163,9 @@ def create_app() -> FastAPI:
     # Add custom middleware
     setup_middleware(app)
     
+    # Add Gateway middleware
+    app.add_middleware(GatewayMiddleware, app=app, gateway=app.state.gateway)
+    
     # Add exception handlers
     setup_exception_handlers(app)
     
@@ -151,6 +194,78 @@ def create_app() -> FastAPI:
         tags=["Unified"]
     )
     
+    app.include_router(
+        correlation_router,
+        prefix="/api/v1",
+        tags=["Correlation"]
+    )
+    
+    app.include_router(
+        ml_trend_router,
+        prefix="/api/v1",
+        tags=["ML Trend"]
+    )
+    
+    app.include_router(
+        auto_scaling_router,
+        prefix="/api/v1",
+        tags=["Auto Scaling"]
+    )
+    
+    app.include_router(
+        monitoring_router,
+        prefix="/api/v1",
+        tags=["Monitoring"]
+    )
+    
+    app.include_router(
+        resource_optimization_router,
+        prefix="/api/v1",
+        tags=["Resource Optimization"]
+    )
+    
+    app.include_router(
+        gdpr_router,
+        prefix="/api/v1",
+        tags=["GDPR"]
+    )
+    
+    app.include_router(
+        threat_detection_router,
+        prefix="/api/v1",
+        tags=["Threat Detection"]
+    )
+    
+    app.include_router(
+        data_encryption_router,
+        prefix="/api/v1",
+        tags=["Data Encryption"]
+    )
+    
+    app.include_router(
+        distributed_data_collector_router,
+        prefix="/api/v1",
+        tags=["Distributed Data Collection"]
+    )
+    
+    app.include_router(
+        timescale_router,
+        prefix="/api/v1",
+        tags=["TimescaleDB"]
+    )
+    
+    app.include_router(
+        automated_test_router,
+        prefix="/api/v1",
+        tags=["Automated Testing"]
+    )
+    
+    app.include_router(
+        i18n_router,
+        prefix="/api/v1",
+        tags=["Internationalization"]
+    )
+    
     # Add root endpoint
     @app.get("/", tags=["Root"])
     async def root():
@@ -169,6 +284,25 @@ def create_app() -> FastAPI:
             "timestamp": datetime.utcnow().isoformat(),
             "version": "1.0.0"
         }
+    
+    # Add gateway status endpoint
+    @app.get("/api/v1/gateway/status", tags=["Gateway"])
+    async def gateway_status():
+        """Get API Gateway status and metrics."""
+        try:
+            gateway_status = await app.state.gateway.get_gateway_status()
+            return {
+                "success": True,
+                "data": gateway_status,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Error getting gateway status: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
     
     return app
 

@@ -83,71 +83,65 @@ class WatchlistMetadata:
 
 @dataclass
 class UnifiedStockData:
-    """통합 주식 데이터 모델"""
     # 기본 정보
     symbol: str
     company_name: str
-    stock_type: StockType
+    stock_type: str
     exchange: str
-    sector: Optional[str] = None
-    industry: Optional[str] = None
-    description: Optional[str] = None
-    website: Optional[str] = None
+    sector: str
+    industry: str
     
-    # 가격 데이터
-    price_data: PriceData = field(default_factory=PriceData)
+    # 가격 정보
+    current_price: Optional[float]
+    market_cap: Optional[float]
+    price_change_24h: Optional[float] = None
+    price_change_pct_24h: Optional[float] = None
     
-    # 센티먼트 데이터
-    sentiment_data: SentimentData = field(default_factory=SentimentData)
+    # 검색 관련
+    relevance_score: float = 0.0
+    search_count: int = 0
+    last_searched: Optional[datetime] = None
     
-    # 검색 메타데이터
-    search_metadata: SearchMetadata = field(default_factory=SearchMetadata)
+    # 센티먼트 관련 (표준화된 범위: -100~+100)
+    sentiment_score: Optional[float] = None  # -100~+100 범위
+    sentiment_history: List[SentimentPoint] = field(default_factory=list)
+    mention_count_24h: int = 0
+    mention_count_7d: int = 0
+    trending_status: bool = False
+    trend_score: Optional[float] = None
+    trend_start_time: Optional[datetime] = None
     
-    # 관심종목 메타데이터
-    watchlist_metadata: WatchlistMetadata = field(default_factory=WatchlistMetadata)
+    # 상세 정보
+    mention_details: List[MentionDetail] = field(default_factory=list)
+    community_breakdown: Dict[str, int] = field(default_factory=dict)
+    investment_style_distribution: Dict[str, float] = field(default_factory=dict)
     
-    # 기타 메타데이터
+    # 메타데이터
+    last_updated: datetime
     data_sources: List[str] = field(default_factory=list)
-    last_updated: datetime = field(default_factory=datetime.now)
-    api_errors: List[str] = field(default_factory=list)
-    
-    def get_display_name(self) -> str:
-        """표시 이름 반환"""
-        return f"{self.symbol} - {self.company_name}"
-    
-    def get_price_change_display(self) -> str:
-        """가격 변동 표시 문자열 반환"""
-        if not self.price_data.change_percent:
-            return "N/A"
-        
-        change = self.price_data.change_percent
-        sign = "+" if change >= 0 else ""
-        return f"{sign}{change:.2f}%"
-    
-    def get_sentiment_display(self) -> str:
-        """센티먼트 표시 문자열 반환"""
-        if not self.sentiment_data.overall_score:
-            return "N/A"
-        
-        score = self.sentiment_data.overall_score
-        sign = "+" if score >= 0 else ""
-        return f"{sign}{score:.0f}"
-    
-    def is_trending(self) -> bool:
-        """트렌딩 여부 확인"""
-        return self.sentiment_data.trending_status != TrendingStatus.NOT_TRENDING
-    
-    def get_trending_emoji(self) -> str:
-        """트렌딩 이모지 반환"""
-        if self.sentiment_data.trending_status == TrendingStatus.TRENDING_UP:
-            return "🚀"
-        elif self.sentiment_data.trending_status == TrendingStatus.TRENDING_DOWN:
-            return "📉"
-        elif self.sentiment_data.trending_status == TrendingStatus.VOLATILE:
-            return "🌊"
-        else:
-            return ""
-```
+    data_quality_score: float = 1.0  # 0~1 범위
+
+@dataclass
+class SentimentPoint:
+    timestamp: datetime
+    sentiment_score: float  # -100~+100
+    mention_count: int
+    source: str  # reddit, twitter, etc.
+    confidence: float  # 0~1 범위
+
+@dataclass
+class MentionDetail:
+    id: str
+    text: str
+    author: str
+    community: str
+    upvotes: int
+    downvotes: int
+    timestamp: datetime
+    investment_style: str
+    sentiment_score: float
+    confidence: float
+    is_spam: bool = False
 
 ### 2.2 데이터 변환 레이어
 
@@ -555,55 +549,56 @@ class DataConsistencyManager:
         return results
 ```
 
-## 3. 구현 계획
+## 3. 구현 상태
 
-### 3.1 Phase 1: 기본 데이터 모델 구현 (1주일)
+### 3.1 Phase 1: 기본 데이터 모델 구현 ✅ 완료
 
-#### 3.1.1 핵심 데이터 모델 구현
-- UnifiedStockData, PriceData, SentimentData 등 핵심 모델 구현
-- 데이터 검증 및 타입 변환 로직 구현
-- 단위 테스트 작성
+#### 3.1.1 핵심 데이터 모델 구현 ✅
+- UnifiedStockData, SentimentPoint, MentionDetail 등 핵심 모델 구현 완료
+- 데이터 검증 및 타입 변환 로직 구현 완료
+- 표준화된 센티먼트 점수 범위(-100~+100) 적용 완료
 
-#### 3.1.2 데이터 변환 레이어 구현
-- UnifiedDataTransformer 클래스 구현
-- 기존 StockResult, StockMention 모델에서 UnifiedStockData로 변환
-- 데이터 병합 로직 구현 및 테스트
+#### 3.1.2 데이터 변환 레이어 구현 ✅
+- UnifiedDataTransformer 클래스 구현 완료 (backend/services/data_transformer.py)
+- 기존 StockResult, StockMention 모델에서 UnifiedStockData로 변환 기능 구현
+- 데이터 병합 로직 구현 완료
 
-### 3.2 Phase 2: 데이터 일관성 전략 구현 (1주일)
+### 3.2 Phase 2: 데이터 일관성 전략 구현 ✅ 완료
 
-#### 3.2.1 일관성 전략 인터페이스 구현
-- DataConsistencyStrategy 인터페이스 정의
-- EventualConsistencyStrategy 구현
-- StrongConsistencyStrategy 구현
+#### 3.2.1 일관성 전략 인터페이스 구현 ✅
+- DataConsistencyStrategy 인터페이스 정의 완료
+- EventualConsistencyStrategy 구현 완료
+- StrongConsistencyStrategy 구현 완료
 
-#### 3.2.2 데이터 일관성 관리자 구현
-- DataConsistencyManager 클래스 구현
-- 일괄 일관성 확인 기능 구현
-- 분산 락 메커니즘 구현 (StrongConsistencyStrategy용)
+#### 3.2.2 데이터 일관성 관리자 구현 ✅
+- DataConsistencyManager 클래스 구현 완료 (backend/services/data_consistency_manager.py)
+- 일괄 일관성 확인 기능 구현 완료
+- 분산 락 메커니즘 구현 완료
+- 데이터 무결성 검증 기능 구현 완료
 
-### 3.3 Phase 3: 기존 시스템과 통합 (1주일)
+### 3.3 Phase 3: 기존 시스템과 통합 ⏳ 진행 중
 
-#### 3.3.1 Enhanced Stock Search 통합
-- SearchController가 UnifiedStockData를 사용하도록 수정
-- 기존 StockResult를 UnifiedStockData로 변환하는 래퍼 구현
-- 검색 결과에 센티먼트 정보 포함
+#### 3.3.1 Enhanced Stock Search 통합 ⏳
+- SearchController가 UnifiedStockData를 사용하도록 수정 필요
+- 기존 StockResult를 UnifiedStockData로 변환하는 래퍼 구현 필요
+- 검색 결과에 센티먼트 정보 포함 필요
 
-#### 3.3.2 Social Sentiment Tracker 통합
-- SentimentController가 UnifiedStockData를 사용하도록 수정
-- 기존 StockMention을 UnifiedStockData로 변환하는 래퍼 구현
-- 센티먼트 데이터에 주식 정보 포함
+#### 3.3.2 Social Sentiment Tracker 통합 ⏳
+- SentimentController가 UnifiedStockData를 사용하도록 수정 필요
+- 기존 StockMention을 UnifiedStockData로 변환하는 래퍼 구현 필요
+- 센티먼트 데이터에 주식 정보 포함 필요
 
-### 3.4 Phase 4: 최적화 및 테스트 (1주일)
+### 3.4 Phase 4: 최적화 및 테스트 ⏳ 대기
 
-#### 3.4.1 성능 최적화
-- 데이터 변환 성능 최적화
-- 메모리 사용량 최적화
-- 캐싱 전략 적용
+#### 3.4.1 성능 최적화 ⏳
+- 데이터 변환 성능 최적화 필요
+- 메모리 사용량 최적화 필요
+- 캐싱 전략 적용 필요
 
-#### 3.4.2 통합 테스트
-- end-to-end 통합 테스트
-- 데이터 일관성 테스트
-- 성능 테스트
+#### 3.4.2 통합 테스트 ⏳
+- end-to-end 통합 테스트 필요
+- 데이터 일관성 테스트 필요
+- 성능 테스트 필요
 
 ## 4. 기술적 고려사항
 

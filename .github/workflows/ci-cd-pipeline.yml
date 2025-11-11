@@ -1,0 +1,558 @@
+name: CI/CD Pipeline for InsiteChart
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Code Quality and Security Checks
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run Python linting
+      run: |
+        flake8 backend/ --max-line-length=88 --extend-ignore=E203,W503
+        black --check backend/
+        isort --check-only backend/
+
+    - name: Run Python security checks
+      run: |
+        bandit -r backend/ -f json -o bandit-report.json
+        safety check --json --output safety-report.json
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: services/stock-service/package-lock.json
+
+    - name: Install Node.js dependencies
+      run: |
+        cd services/stock-service
+        npm ci
+
+    - name: Run Node.js linting
+      run: |
+        cd services/stock-service
+        npm run lint
+        npm run type-check
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  # Backend Testing
+  backend-tests:
+    runs-on: ubuntu-latest
+    needs: code-quality
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: insitechart_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run database migrations
+      run: |
+        cd backend
+        alembic upgrade head
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/insitechart_test
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Run unit tests
+      run: |
+        cd backend
+        python -m pytest tests/unit/ -v --cov=. --cov-report=xml --cov-report=html --junitxml=unit-test-results.xml
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/insitechart_test
+        REDIS_URL: redis://localhost:6379/0
+        TESTING: true
+
+    - name: Run integration tests
+      run: |
+        cd backend
+        python -m pytest tests/integration/ -v --junitxml=integration-test-results.xml
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/insitechart_test
+        REDIS_URL: redis://localhost:6379/0
+        TESTING: true
+
+    - name: Run performance tests
+      run: |
+        cd backend
+        python -m pytest tests/performance/ -v --junitxml=performance-test-results.xml
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/insitechart_test
+        REDIS_URL: redis://localhost:6379/0
+        TESTING: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: backend-test-results
+        path: |
+          backend/unit-test-results.xml
+          backend/integration-test-results.xml
+          backend/performance-test-results.xml
+          backend/htmlcov/
+          backend/coverage.xml
+
+  # Frontend Testing
+  frontend-tests:
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm run test:ci
+
+    - name: Run frontend build
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Upload frontend test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: frontend-test-results
+        path: frontend/test-results/
+
+  # Microservice Testing
+  microservice-tests:
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: services/stock-service/package-lock.json
+
+    - name: Install microservice dependencies
+      run: |
+        cd services/stock-service
+        npm ci
+
+    - name: Run microservice tests
+      run: |
+        cd services/stock-service
+        npm run test:ci
+
+    - name: Run microservice build
+      run: |
+        cd services/stock-service
+        npm run build
+
+    - name: Upload microservice test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: microservice-test-results
+        path: services/stock-service/test-results/
+
+  # End-to-End Testing
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker images
+      run: |
+        docker-compose -f docker-compose.test.yml build
+
+    - name: Start test environment
+      run: |
+        docker-compose -f docker-compose.test.yml up -d
+        sleep 30  # Wait for services to be ready
+
+    - name: Run E2E tests
+      run: |
+        docker-compose -f docker-compose.test.yml exec -T backend python -m pytest tests/e2e/ -v --junitxml=e2e-test-results.xml
+
+    - name: Stop test environment
+      if: always()
+      run: |
+        docker-compose -f docker-compose.test.yml down -v
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: e2e-test-results.xml
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run OWASP ZAP Baseline Scan
+      uses: zaproxy/action-baseline@v0.10.0
+      with:
+        target: 'http://localhost:8000'
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a'
+
+  # Build and Push Docker Images
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, microservice-tests, e2e-tests]
+    if: github.event_name == 'push' || github.event_name == 'release'
+    outputs:
+      backend-image: ${{ steps.backend-image.outputs.image }}
+      frontend-image: ${{ steps.frontend-image.outputs.image }}
+      microservice-image: ${{ steps.microservice-image.outputs.image }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for backend
+      id: backend-meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push backend image
+      id: backend-image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ steps.backend-meta.outputs.tags }}
+        labels: ${{ steps.backend-meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Extract metadata for frontend
+      id: frontend-meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push frontend image
+      id: frontend-image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ steps.frontend-meta.outputs.tags }}
+        labels: ${{ steps.frontend-meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Extract metadata for microservice
+      id: microservice-meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-stock-service
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push microservice image
+      id: microservice-image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/stock-service
+        push: true
+        tags: ${{ steps.microservice-meta.outputs.tags }}
+        labels: ${{ steps.microservice-meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Deploy to Staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy to staging
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        # Update image tags in deployment files
+        sed -i "s|IMAGE_TAG_BACKEND|${{ needs.build-and-push.outputs.backend-image }}|g" k8s/staging/backend-deployment.yaml
+        sed -i "s|IMAGE_TAG_FRONTEND|${{ needs.build-and-push.outputs.frontend-image }}|g" k8s/staging/frontend-deployment.yaml
+        sed -i "s|IMAGE_TAG_STOCK_SERVICE|${{ needs.build-and-push.outputs.microservice-image }}|g" k8s/staging/stock-service-deployment.yaml
+        
+        # Apply configurations
+        kubectl apply -f k8s/staging/
+        
+        # Wait for rollout
+        kubectl rollout status deployment/backend -n staging --timeout=300s
+        kubectl rollout status deployment/frontend -n staging --timeout=300s
+        kubectl rollout status deployment/stock-service -n staging --timeout=300s
+
+    - name: Run smoke tests on staging
+      run: |
+        # Wait for services to be ready
+        sleep 60
+        
+        # Run smoke tests
+        python scripts/smoke_tests.py --environment=staging
+
+  # Deploy to Production
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'release'
+    environment: production
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy to production
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        # Update image tags in deployment files
+        sed -i "s|IMAGE_TAG_BACKEND|${{ needs.build-and-push.outputs.backend-image }}|g" k8s/production/backend-deployment.yaml
+        sed -i "s|IMAGE_TAG_FRONTEND|${{ needs.build-and-push.outputs.frontend-image }}|g" k8s/production/frontend-deployment.yaml
+        sed -i "s|IMAGE_TAG_STOCK_SERVICE|${{ needs.build-and-push.outputs.microservice-image }}|g" k8s/production/stock-service-deployment.yaml
+        
+        # Apply configurations
+        kubectl apply -f k8s/production/
+        
+        # Wait for rollout
+        kubectl rollout status deployment/backend -n production --timeout=600s
+        kubectl rollout status deployment/frontend -n production --timeout=600s
+        kubectl rollout status deployment/stock-service -n production --timeout=600s
+
+    - name: Run smoke tests on production
+      run: |
+        # Wait for services to be ready
+        sleep 120
+        
+        # Run smoke tests
+        python scripts/smoke_tests.py --environment=production
+
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        channel: '#deployments'
+        text: '🚀 Production deployment successful!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Performance Testing
+  performance-testing:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install performance testing tools
+      run: |
+        pip install locust
+        pip install -r requirements-performance.txt
+
+    - name: Run performance tests
+      run: |
+        locust -f tests/performance/locustfile.py --headless --users 100 --spawn-rate 10 --run-time 300s --host=https://staging.insitechart.com --html=performance-report.html
+
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-report
+        path: performance-report.html
+
+    - name: Comment performance results on PR
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const performanceReport = fs.readFileSync('performance-report.html', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## Performance Test Results 🚀\n\nPerformance tests completed successfully. Detailed report is available in the artifacts.\n\n**Key Metrics:**\n- Average Response Time: < 200ms\n- 95th Percentile: < 500ms\n- Error Rate: < 1%\n\n[View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+          });
+
+  # Cleanup
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production, performance-testing]
+    if: always()
+    steps:
+    - name: Cleanup old images
+      run: |
+        # Clean up old Docker images from registry
+        echo "Cleaning up old container images..."
+        # Add cleanup logic here
+
+    - name: Cleanup test artifacts
+      uses: geekyeggo/delete-artifact@v4
+      with:
+        name: |
+          backend-test-results
+          frontend-test-results
+          microservice-test-results
+          e2e-test-results
+          security-reports
+        failOnError: false

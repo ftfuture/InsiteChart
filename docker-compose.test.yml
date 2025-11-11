@@ -1,0 +1,319 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with TimescaleDB for testing
+  postgres-test:
+    image: timescale/timescaledb:latest-pg15
+    container_name: insitechart-postgres-test
+    environment:
+      POSTGRES_DB: insitechart_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./backend/alembic:/alembic
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for testing
+  redis-test:
+    image: redis:7-alpine
+    container_name: insitechart-redis-test
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka for testing
+  kafka-test:
+    image: confluentinc/cp-kafka:latest
+    container_name: insitechart-kafka-test
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-test:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-test:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+    ports:
+      - "9093:9092"
+    depends_on:
+      - zookeeper-test
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Zookeeper for Kafka
+  zookeeper-test:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: insitechart-zookeeper-test
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2182:2181"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch for testing
+  elasticsearch-test:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: insitechart-elasticsearch-test
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9201:9200"
+    volumes:
+      - elasticsearch_test_data:/usr/share/elasticsearch/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Backend API for testing
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: insitechart-backend-test
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-test:5432/insitechart_test
+      - REDIS_URL=redis://redis-test:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-test:9092
+      - ELASTICSEARCH_URL=http://elasticsearch-test:9200
+      - TESTING=true
+      - LOG_LEVEL=DEBUG
+      - CACHE_TYPE=redis
+      - CORS_ORIGINS=*
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      kafka-test:
+        condition: service_healthy
+      elasticsearch-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./backend:/app
+      - test_reports:/app/test_reports
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        python -c 'import time; time.sleep(10)' &&
+        echo 'Running database migrations...' &&
+        alembic upgrade head &&
+        echo 'Starting application...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Frontend for testing
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    container_name: insitechart-frontend-test
+    environment:
+      - REACT_APP_API_URL=http://backend-test:8000
+      - REACT_APP_WS_URL=ws://backend-test:8000
+      - NODE_ENV=test
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend-test
+    networks:
+      - test-network
+    volumes:
+      - ./frontend:/app
+      - frontend_test_build:/app/build
+    command: >
+      sh -c "
+        npm install &&
+        npm run build &&
+        npm run test:ci
+      "
+
+  # Stock Service Microservice for testing
+  stock-service-test:
+    build:
+      context: ./services/stock-service
+      dockerfile: Dockerfile
+    container_name: insitechart-stock-service-test
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-test:5432/insitechart_test
+      - REDIS_URL=redis://redis-test:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-test:9092
+      - PORT=3001
+    ports:
+      - "3002:3001"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      kafka-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./services/stock-service:/app
+      - stock_service_test_reports:/app/test-reports
+    command: >
+      sh -c "
+        npm install &&
+        npm run build &&
+        npm run test:ci
+      "
+
+  # Performance Testing with Locust
+  performance-test:
+    image: locustio/locust:latest
+    container_name: insitechart-performance-test
+    environment:
+      - TARGET_HOST=http://backend-test:8000
+    ports:
+      - "8089:8089"
+    depends_on:
+      backend-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./tests/performance:/mnt/locust
+    command: >
+      sh -c "
+        echo 'Waiting for backend to be ready...' &&
+        sleep 30 &&
+        locust -f /mnt/locust/locustfile.py --headless --users 50 --spawn-rate 5 --run-time 60s --host=$TARGET_HOST --html=/mnt/locust/performance-report.html
+      "
+
+  # Security Testing with OWASP ZAP
+  security-test:
+    image: owasp/zap2docker-stable
+    container_name: insitechart-security-test
+    environment:
+      - TARGET_URL=http://backend-test:8000
+    ports:
+      - "8090:8080"
+    depends_on:
+      backend-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - security_test_reports:/zap/wrk
+    command: >
+      sh -c "
+        echo 'Waiting for backend to be ready...' &&
+        sleep 30 &&
+        zap-baseline.py -t $TARGET_URL -J /zap/wrk/security-report.json -r /zap/wrk/security-report.html
+      "
+
+  # Test Data Generator
+  test-data-generator:
+    build:
+      context: ./tests/test_data
+      dockerfile: Dockerfile
+    container_name: insitechart-test-data-generator
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-test:5432/insitechart_test
+      - REDIS_URL=redis://redis-test:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-test:9092
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      kafka-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./tests/test_data:/app
+    command: >
+      sh -c "
+        echo 'Generating test data...' &&
+        python generate_test_data.py --database-url $DATABASE_URL --redis-url $REDIS_URL --kafka-servers $KAFKA_BOOTSTRAP_SERVERS
+      "
+
+  # Test Results Aggregator
+  test-results-aggregator:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.test-aggregator
+    container_name: insitechart-test-results-aggregator
+    environment:
+      - BACKEND_URL=http://backend-test:8000
+      - FRONTEND_URL=http://frontend-test:3000
+      - STOCK_SERVICE_URL=http://stock-service-test:3001
+    depends_on:
+      - backend-test
+      - frontend-test
+      - stock-service-test
+      - performance-test
+      - security-test
+    networks:
+      - test-network
+    volumes:
+      - ./test_reports:/app/reports
+      - test_reports:/shared/reports
+    command: >
+      sh -c "
+        echo 'Waiting for all tests to complete...' &&
+        sleep 300 &&
+        python aggregate_test_results.py --output-dir /shared/reports
+      "
+
+volumes:
+  postgres_test_data:
+  redis_test_data:
+  elasticsearch_test_data:
+  test_reports:
+  frontend_test_build:
+  stock_service_test_reports:
+  security_test_reports:
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

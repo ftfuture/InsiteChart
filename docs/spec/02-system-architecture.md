@@ -1,92 +1,55 @@
-# 통합 시스템 아키텍처
+# 단순화된 통합 시스템 아키텍처
 
 ## 1. 아키텍처 개요
 
 ### 1.1 설계 원칙
 본 시스템은 다음과 같은 핵심 설계 원칙을 따릅니다:
 
-- **마이크로서비스 아키텍처**: 독립적으로 배포 가능한 서비스 단위로 시스템 분리
-- **확장성**: 수평적 확장이 가능한 아키텍처 설계
-- **고가용성**: 장애 발생 시 서비스 연속성 보장
-- **보안**: 모든 레이어에서 보안 정책 적용
-- **모니터링**: 실시간 시스템 상태 및 성능 모니터링
+- **단순화된 모듈러 아키텍처**: 핵심 기능 중심의 단순한 구조
+- **점진적 확장성**: 필요에 따른 단계적 확장 가능
+- **안정성**: 장애 발생 시 기본 기능 유지
+- **필수 보안**: 핵심 보안 기능에 집중
+- **기본 모니터링**: 필수 모니터링 기능에 집중
 
 ### 1.2 아키텍처 비전
-"데이터 기반의 스마트한 투자 결정을 지원하는 확장 가능한 금융 분석 플랫폼 구축"
+"단순하고 안정적인 주식 검색 및 센티먼트 분석 플랫폼 구축"
 
 ## 2. 전체 시스템 아키텍처
 
-### 2.1 고수준 아키텍처
+### 2.1 단순화된 고수준 아키텍처
 
 ```mermaid
 graph TB
     subgraph "프론트엔드 레이어"
-        A[Web Application<br/>Streamlit/React]
-        B[Mobile Application<br/>React Native]
-        C[Admin Dashboard<br/>React]
+        A[Web Application<br/>Streamlit]
     end
     
-    subgraph "API 게이트웨이 레이어"
-        D[Kong API Gateway<br/>Load Balancer]
-        E[Authentication Service<br/>JWT/OAuth]
-        F[Rate Limiting Service]
+    subgraph "단순화된 API 레이어"
+        B[Simple API Gateway<br/>Basic Auth]
+        C[Rate Limiting]
     end
     
-    subgraph "마이크로서비스 레이어"
-        G[User Service<br/>사용자 관리]
-        H[Stock Search Service<br/>주식 검색]
-        I[Social Sentiment Service<br/>소셜 센티먼트]
-        J[Chart Analysis Service<br/>차트 분석]
-        K[Notification Service<br/>알림 서비스]
-        L[Analytics Service<br/>데이터 분석]
+    subgraph "핵심 서비스 레이어"
+        D[Unified Service<br/>주식 검색 + 센티먼트]
     end
     
     subgraph "데이터 레이어"
-        M[PostgreSQL<br/>관계형 데이터]
-        N[TimescaleDB<br/>시계열 데이터]
-        O[Redis<br/>캐시]
-        P[Elasticsearch<br/>검색/로그]
-        Q[S3<br/>파일 저장소]
-    end
-    
-    subgraph "메시징 레이어"
-        R[RabbitMQ<br/>메시지 큐]
+        E[PostgreSQL<br/>통합 데이터]
+        F[Redis<br/>캐시]
     end
     
     subgraph "외부 API"
-        S[Yahoo Finance API]
-        T[Reddit API]
-        U[Twitter API]
-        V[Discord API]
+        G[Yahoo Finance API]
+        H[Reddit API]
     end
     
-    A --> D
-    B --> D
+    A --> B
+    B --> C
     C --> D
     D --> E
     D --> F
-    E --> G
-    E --> H
-    E --> I
-    E --> J
-    E --> K
-    E --> L
-    G --> M
-    H --> M
-    H --> N
-    H --> O
-    I --> M
-    I --> N
-    I --> O
-    J --> N
-    K --> R
-    L --> P
-    H --> S
-    I --> T
-    I --> U
-    I --> V
-    R --> K
-    R --> L
+    D --> G
+    D --> H
 ```
 
 ### 2.2 서비스 상호작용
@@ -128,883 +91,531 @@ sequenceDiagram
     W-->>U: 센티먼트 표시
 ```
 
-## 3. 마이크로서비스 상세 설계
+## 3. 단순화된 서비스 설계
 
-### 3.1 API 게이트웨이
+### 3.1 단순화된 API 게이트웨이
 
-#### 3.1.1 Kong API Gateway 설정
-```yaml
-# kong.yml
-_format_version: "3.0"
-
-services:
-  - name: user-service
-    url: http://user-service:8001
-    plugins:
-      - name: rate-limiting
-        config:
-          minute: 100
-          hour: 1000
-      - name: jwt
-        config:
-          secret_is_base64: false
-    routes:
-      - name: user-routes
-        paths: ["/api/v1/users"]
-
-  - name: stock-search-service
-    url: http://stock-search-service:8002
-    plugins:
-      - name: rate-limiting
-        config:
-          minute: 200
-          hour: 2000
-      - name: jwt
-        config:
-          secret_is_base64: false
-    routes:
-      - name: search-routes
-        paths: ["/api/v1/search"]
-
-  - name: social-sentiment-service
-    url: http://social-sentiment-service:8003
-    plugins:
-      - name: rate-limiting
-        config:
-          minute: 150
-          hour: 1500
-      - name: jwt
-        config:
-          secret_is_base64: false
-    routes:
-      - name: sentiment-routes
-        paths: ["/api/v1/sentiment"]
-```
-
-#### 3.1.2 로드 밸런싱 전략
-- **라운드 로빈**: 최소 연결 수 기반
-- **최소 연결**: 각 서비스당 최소 2개 연결
-- **헬스 체크**: 30초 간격으로 서비스 상태 확인
-- **장애 격리**: 비정상 서비스 자동 트래픽 차단
-
-### 3.2 인증 서비스
-
-#### 3.2.1 JWT 기반 인증
+#### 3.1.1 기본 API Gateway 설정
 ```python
-# auth_service/models.py
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Optional, List
-import jwt
+# simple_gateway.py
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import redis
+import time
 
-@dataclass
-class User:
-    id: int
-    username: str
-    email: str
-    password_hash: str
-    role: str
-    is_active: bool = True
-    created_at: datetime = None
-    last_login: Optional[datetime] = None
-    permissions: List[str] = None
+app = FastAPI(title="InsiteChart Simple Gateway")
 
-class AuthService:
-    def __init__(self, secret_key: str, token_expiry: int = 3600):
-        self.secret_key = secret_key
-        self.token_expiry = token_expiry
-        self.refresh_token_expiry = 86400  # 24시간
+# 기본 CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 기본 속도 제한
+redis_client = redis.Redis(host='redis', port=6379, db=0)
+
+@app.middleware("http")
+async def rate_limit_middleware(request, call_next):
+    client_ip = request.client.host
+    current_time = int(time.time())
+    key = f"rate_limit:{client_ip}:{current_time // 60}"
     
-    def generate_tokens(self, user: User) -> dict:
-        """액세스 토큰과 리프레시 토큰 생성"""
-        now = datetime.utcnow()
-        
-        access_payload = {
-            'user_id': user.id,
-            'username': user.username,
-            'role': user.role,
-            'permissions': self.get_user_permissions(user),
-            'iat': now,
-            'exp': now + timedelta(seconds=self.token_expiry),
-            'type': 'access'
-        }
-        
-        refresh_payload = {
-            'user_id': user.id,
-            'username': user.username,
-            'iat': now,
-            'exp': now + timedelta(seconds=self.refresh_token_expiry),
-            'type': 'refresh'
-        }
-        
-        access_token = jwt.encode(access_payload, self.secret_key, algorithm='HS256')
-        refresh_token = jwt.encode(refresh_payload, self.secret_key, algorithm='HS256')
-        
-        return {
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'token_type': 'Bearer',
-            'expires_in': self.token_expiry
-        }
-```
-
-#### 3.2.2 OAuth 2.0 통합
-```python
-# auth_service/oauth.py
-from authlib.integrations.starlette_client import OAuth
-from fastapi import FastAPI
-
-class OAuthManager:
-    def __init__(self, app: FastAPI):
-        self.oauth = OAuth(app)
-        self.setup_providers()
+    current_count = redis_client.incr(key)
+    if current_count > 100:  # 분당 100요청 제한
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
     
-    def setup_providers(self):
-        # Google OAuth
-        self.oauth.register(
-            name='google',
-            client_id=os.getenv('GOOGLE_CLIENT_ID'),
-            client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-            server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-            client_kwargs={
-                'scope': 'openid email profile'
-            }
-        )
-        
-        # GitHub OAuth
-        self.oauth.register(
-            name='github',
-            client_id=os.getenv('GITHUB_CLIENT_ID'),
-            client_secret=os.getenv('GITHUB_CLIENT_SECRET'),
-            authorize_url='https://github.com/login/oauth/authorize',
-            access_token_url='https://github.com/login/oauth/access_token',
-            client_kwargs={
-                'scope': 'user:email'
-            }
-        )
+    redis_client.expire(key, 60)
+    response = await call_next(request)
+    return response
 ```
 
-### 3.3 주식 검색 서비스
+#### 3.1.2 단순화된 라우팅
+- **기본 라우팅**: 단일 통합 서비스로 모든 요청 전달
+- **헬스 체크**: 60초 간격으로 서비스 상태 확인
+- **기본 장애 처리**: 서비스 장애 시 간단한 에러 메시지 반환
 
-#### 3.3.1 서비스 아키텍처
+### 3.2 단순화된 인증 서비스
+
+#### 3.2.1 기본 API 키 인증
 ```python
-# stock_search_service/service.py
-class StockSearchService:
-    def __init__(self, db_pool, redis_client, yahoo_client):
+# simple_auth.py
+import hashlib
+import secrets
+from typing import Optional
+
+class SimpleAuthService:
+    def __init__(self):
+        self.api_keys = {
+            "demo_key": {"user_id": "demo_user", "permissions": ["read"]}
+        }
+    
+    def generate_api_key(self, user_id: str) -> str:
+        """간단한 API 키 생성"""
+        random_string = secrets.token_urlsafe(32)
+        api_key = hashlib.sha256(f"{user_id}:{random_string}".encode()).hexdigest()
+        self.api_keys[api_key] = {"user_id": user_id, "permissions": ["read"]}
+        return api_key
+    
+    def validate_api_key(self, api_key: str) -> Optional[dict]:
+        """API 키 검증"""
+        return self.api_keys.get(api_key)
+    
+    def is_authorized(self, api_key: str, required_permission: str) -> bool:
+        """권한 확인"""
+        key_data = self.validate_api_key(api_key)
+        if not key_data:
+            return False
+        return required_permission in key_data.get("permissions", [])
+```
+
+### 3.3 단순화된 통합 서비스
+
+#### 3.3.1 통합 서비스 아키텍처
+```python
+# unified_service/service.py
+class UnifiedService:
+    def __init__(self, db_pool, redis_client):
         self.db_pool = db_pool
         self.redis = redis_client
-        self.yahoo_client = yahoo_client
         self.cache_ttl = 300  # 5분
     
-    async def search_stocks(self, query: str, filters: dict = None) -> List[StockResult]:
-        """주식 검색 메인 로직"""
+    async def search_stocks(self, query: str, include_sentiment: bool = False) -> List[dict]:
+        """통합 주식 검색"""
         # 1. 캐시 확인
-        cache_key = f"search:{hash(query)}:{hash(str(filters))}"
+        cache_key = f"search:{hash(query)}:{include_sentiment}"
         cached_result = await self.redis.get(cache_key)
         if cached_result:
             return json.loads(cached_result)
         
         # 2. Yahoo Finance API 호출
-        search_results = await self.yahoo_client.search_stocks(query)
+        search_results = await self._search_yahoo_finance(query)
         
-        # 3. 필터링 적용
-        if filters:
-            search_results = self.apply_filters(search_results, filters)
+        # 3. 센티먼트 데이터 추가 (선택적)
+        if include_sentiment:
+            search_results = await self._add_sentiment_data(search_results)
         
-        # 4. 관련도 점수 계산
-        search_results = self.calculate_relevance_scores(search_results, query)
-        
-        # 5. 결과 캐싱
+        # 4. 결과 캐싱
         await self.redis.setex(cache_key, self.cache_ttl, json.dumps(search_results))
         
         return search_results
     
-    async def get_autocomplete_suggestions(self, query: str, limit: int = 10) -> List[str]:
-        """자동완성 제안 생성"""
-        # 실시간 자동완성 로직 구현
+    async def _search_yahoo_finance(self, query: str) -> List[dict]:
+        """Yahoo Finance API 호출"""
+        # 간단한 Yahoo Finance API 호출 구현
+        pass
+    
+    async def _add_sentiment_data(self, stocks: List[dict]) -> List[dict]:
+        """센티먼트 데이터 추가"""
+        # 간단한 센티먼트 데이터 추가 구현
         pass
 ```
 
-#### 3.3.2 데이터 모델
+#### 3.3.2 단순화된 데이터 모델
 ```python
-# stock_search_service/models.py
+# unified_service/models.py
 from dataclasses import dataclass
 from typing import Optional, List
 from datetime import datetime
 
 @dataclass
-class StockResult:
+class SimpleStockResult:
     symbol: str
     company_name: str
-    stock_type: str
-    exchange: str
-    sector: Optional[str] = None
-    industry: Optional[str] = None
-    market_cap: Optional[float] = None
     current_price: Optional[float] = None
-    relevance_score: float = 0.0
+    change_percent: Optional[float] = None
     sentiment_score: Optional[float] = None
-    mention_count_24h: int = 0
-    trending_status: bool = False
-
-@dataclass
-class SearchHistory:
-    id: int
-    user_id: int
-    symbol: str
-    search_query: str
-    search_time: datetime
-    search_count: int = 1
+    mention_count: int = 0
 ```
 
-### 3.4 소셜 센티먼트 서비스
+### 3.4 단순화된 센티먼트 서비스
 
-#### 3.4.1 데이터 수집 아키텍처
+#### 3.4.1 기본 데이터 수집
 ```python
-# social_sentiment_service/collector.py
-class SocialDataCollector:
-    def __init__(self, reddit_client, twitter_client, db_pool, message_queue):
-        self.reddit_client = reddit_client
-        self.twitter_client = twitter_client
-        self.db_pool = db_pool
-        self.message_queue = message_queue
+# simple_sentiment/collector.py
+class SimpleSentimentCollector:
+    def __init__(self, redis_client):
+        self.redis = redis_client
     
-    async def collect_mentions(self, timeframe: str = "24h") -> List[StockMention]:
-        """소셜 미디어 언급 데이터 수집"""
-        mentions = []
+    async def collect_basic_mentions(self, symbol: str, timeframe: str = "24h") -> dict:
+        """기본 소셜 미디어 언급 데이터 수집"""
+        # Reddit API를 통한 기본 데이터 수집만 구현
+        mentions = await self._fetch_reddit_mentions(symbol, timeframe)
         
-        # Reddit 데이터 수집
-        reddit_mentions = await self.reddit_client.collect_mentions(timeframe)
-        mentions.extend(reddit_mentions)
+        # 간단한 처리 및 저장
+        processed_data = self._process_mentions(mentions)
+        await self._cache_sentiment_data(symbol, processed_data)
         
-        # Twitter 데이터 수집
-        twitter_mentions = await self.twitter_client.collect_mentions(timeframe)
-        mentions.extend(twitter_mentions)
-        
-        # 데이터 정제 및 저장
-        processed_mentions = self.process_mentions(mentions)
-        await self.save_mentions(processed_mentions)
-        
-        # 메시지 큐에 전송 (센티먼트 분석용)
-        for mention in processed_mentions:
-            await self.message_queue.publish('sentiment_analysis', {
-                'symbol': mention.symbol,
-                'text': mention.text,
-                'source': mention.source
-            })
-        
-        return processed_mentions
+        return processed_data
+    
+    async def _fetch_reddit_mentions(self, symbol: str, timeframe: str) -> List[dict]:
+        """Reddit에서 언급 데이터 가져오기"""
+        # 간단한 Reddit API 호출 구현
+        pass
 ```
 
-#### 3.4.2 센티먼트 분석
+#### 3.4.2 기본 센티먼트 분석
 ```python
-# social_sentiment_service/analyzer.py
+# simple_sentiment/analyzer.py
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-import re
 
-class SentimentAnalyzer:
+class SimpleSentimentAnalyzer:
     def __init__(self):
         self.analyzer = SentimentIntensityAnalyzer()
-        self.stock_lexicon = self.load_stock_lexicon()
     
-    def analyze_sentiment(self, text: str) -> SentimentResult:
-        """텍스트 센티먼트 분석"""
-        # 기본 VADER 분석
-        vader_scores = self.analyzer.polarity_scores(text)
-        
-        # 주식 특화 용어 가중치 적용
-        stock_scores = self.analyze_stock_specific_terms(text)
-        
-        # 종합 점수 계산
-        final_score = self.calculate_weighted_sentiment(vader_scores, stock_scores)
-        
-        return SentimentResult(
-            compound_score=final_score,
-            positive_score=vader_scores['pos'],
-            negative_score=vader_scores['neg'],
-            neutral_score=vader_scores['neu'],
-            confidence=self.calculate_confidence(final_score, text)
-        )
+    def analyze_basic_sentiment(self, text: str) -> float:
+        """기본 텍스트 센티먼트 분석"""
+        # VADER 분석만 사용
+        scores = self.analyzer.polarity_scores(text)
+        return scores['compound']  # -1에서 1 사이의 점수
     
-    def analyze_stock_specific_terms(self, text: str) -> dict:
-        """주식 커뮤니티 특화 용어 분석"""
-        scores = {'bullish': 0, 'bearish': 0, 'neutral': 0}
-        
-        # 긍정적 용어
-        bullish_terms = ['moon', 'rocket', 'diamond hands', 'bullish', 'buy', 'hold']
-        # 부정적 용어
-        bearish_terms = ['crash', 'paper hands', 'bearish', 'sell', 'dump']
-        
-        text_lower = text.lower()
-        
-        for term in bullish_terms:
-            if term in text_lower:
-                scores['bullish'] += 1
-        
-        for term in bearish_terms:
-            if term in text_lower:
-                scores['bearish'] += 1
-        
-        return scores
+    def get_sentiment_label(self, score: float) -> str:
+        """센티먼트 레이블 반환"""
+        if score > 0.1:
+            return "positive"
+        elif score < -0.1:
+            return "negative"
+        else:
+            return "neutral"
 ```
 
-## 4. 데이터 아키텍처
+## 4. 단순화된 데이터 아키텍처
 
-### 4.1 데이터베이스 설계
+### 4.1 단순화된 데이터베이스 설계
 
-#### 4.1.1 PostgreSQL 스키마
+#### 4.1.1 기본 PostgreSQL 스키마
 ```sql
--- 사용자 테이블
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'basic',
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
-);
-
 -- 주식 기본 정보 테이블
 CREATE TABLE stocks (
     symbol VARCHAR(10) PRIMARY KEY,
     company_name VARCHAR(255) NOT NULL,
-    stock_type VARCHAR(20) NOT NULL,
-    exchange VARCHAR(20) NOT NULL,
-    sector VARCHAR(100),
-    industry VARCHAR(100),
-    market_cap BIGINT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    current_price FLOAT,
+    change_percent FLOAT,
+    sentiment_score FLOAT,
+    mention_count INTEGER DEFAULT 0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 검색 기록 테이블
 CREATE TABLE search_history (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    symbol VARCHAR(10) REFERENCES stocks(symbol),
     search_query VARCHAR(255),
     search_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    search_count INTEGER DEFAULT 1
+    results_count INTEGER DEFAULT 0
 );
 
--- 관심종목 테이블
-CREATE TABLE watchlists (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    symbol VARCHAR(10) REFERENCES stocks(symbol),
-    category VARCHAR(50),
-    note TEXT,
-    added_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    order_index INTEGER,
-    UNIQUE(user_id, symbol)
-);
-
--- 소셜 언급 테이블
-CREATE TABLE stock_mentions (
-    id SERIAL PRIMARY KEY,
-    symbol VARCHAR(10) REFERENCES stocks(symbol),
-    text TEXT NOT NULL,
-    source VARCHAR(20) NOT NULL,
-    community VARCHAR(100),
-    author VARCHAR(100),
-    timestamp TIMESTAMP NOT NULL,
-    upvotes INTEGER DEFAULT 0,
-    sentiment_score FLOAT,
-    investment_style VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 인덱스 생성
-CREATE INDEX idx_search_history_user_time ON search_history(user_id, search_time DESC);
-CREATE INDEX idx_stock_mentions_symbol_time ON stock_mentions(symbol, timestamp DESC);
-CREATE INDEX idx_watchlists_user_category ON watchlists(user_id, category);
+-- 기본 인덱스 생성
+CREATE INDEX idx_stocks_symbol ON stocks(symbol);
+CREATE INDEX idx_search_history_time ON search_history(search_time DESC);
 ```
 
-#### 4.1.2 TimescaleDB 시계열 데이터
-```sql
--- 주식 가격 시계열 데이터
-CREATE TABLE stock_prices (
-    time TIMESTAMP NOT NULL,
-    symbol VARCHAR(10) NOT NULL,
-    open_price FLOAT,
-    high_price FLOAT,
-    low_price FLOAT,
-    close_price FLOAT,
-    volume BIGINT,
-    adj_close_price FLOAT
-);
+### 4.2 단순화된 캐싱 전략
 
--- 하이퍼테이블 생성 (시간당 데이터)
-SELECT create_hypertable('stock_prices', 'time', chunk_time_interval => INTERVAL '1 hour');
-
--- 센티먼트 시계열 데이터
-CREATE TABLE sentiment_timeseries (
-    time TIMESTAMP NOT NULL,
-    symbol VARCHAR(10) NOT NULL,
-    sentiment_score FLOAT,
-    mention_count INTEGER,
-    positive_count INTEGER,
-    negative_count INTEGER,
-    neutral_count INTEGER
-);
-
--- 하이퍼테이블 생성 (일별 데이터)
-SELECT create_hypertable('sentiment_timeseries', 'time', chunk_time_interval => INTERVAL '1 day');
-```
-
-### 4.2 캐싱 전략
-
-#### 4.2.1 Redis 캐시 구조
+#### 4.2.1 기본 Redis 캐시 구조
 ```python
-# cache/cache_manager.py
-class CacheManager:
+# simple_cache.py
+import redis
+import json
+import hashlib
+from typing import Optional, List, Any
+
+class SimpleCacheManager:
     def __init__(self, redis_client):
         self.redis = redis_client
-        
-        # 캐시 키 정의
-        self.keys = {
-            'stock_search': 'search:{query_hash}',
-            'stock_info': 'stock:{symbol}',
-            'sentiment_data': 'sentiment:{symbol}:{timeframe}',
-            'user_session': 'session:{user_id}',
-            'trending_stocks': 'trending:{timeframe}',
-            'autocomplete': 'autocomplete:{query}'
-        }
-        
-        # 캐시 TTL 설정
-        self.ttl = {
-            'stock_search': 300,      # 5분
-            'stock_info': 3600,      # 1시간
-            'sentiment_data': 300,   # 5분
-            'user_session': 86400,   # 24시간
-            'trending_stocks': 600,  # 10분
-            'autocomplete': 1800     # 30분
-        }
+        self.default_ttl = 300  # 5분
     
-    async def get_stock_search_results(self, query_hash: str) -> Optional[List[dict]]:
-        """주식 검색 결과 캐시 조회"""
-        key = self.keys['stock_search'].format(query_hash=query_hash)
-        cached_data = await self.redis.get(key)
+    def _get_cache_key(self, prefix: str, identifier: str) -> str:
+        """캐시 키 생성"""
+        return f"{prefix}:{hashlib.md5(identifier.encode()).hexdigest()}"
+    
+    def get_search_results(self, query: str) -> Optional[List[dict]]:
+        """검색 결과 캐시 조회"""
+        key = self._get_cache_key("search", query)
+        cached_data = self.redis.get(key)
         return json.loads(cached_data) if cached_data else None
     
-    async def set_stock_search_results(self, query_hash: str, results: List[dict]):
-        """주식 검색 결과 캐시 저장"""
-        key = self.keys['stock_search'].format(query_hash=query_hash)
-        await self.redis.setex(
-            key, 
-            self.ttl['stock_search'], 
-            json.dumps(results, default=str)
-        )
+    def set_search_results(self, query: str, results: List[dict]):
+        """검색 결과 캐시 저장"""
+        key = self._get_cache_key("search", query)
+        self.redis.setex(key, self.default_ttl, json.dumps(results, default=str))
+    
+    def get_stock_data(self, symbol: str) -> Optional[dict]:
+        """주식 데이터 캐시 조회"""
+        key = self._get_cache_key("stock", symbol)
+        cached_data = self.redis.get(key)
+        return json.loads(cached_data) if cached_data else None
+    
+    def set_stock_data(self, symbol: str, data: dict):
+        """주식 데이터 캐시 저장"""
+        key = self._get_cache_key("stock", symbol)
+        self.redis.setex(key, self.default_ttl, json.dumps(data, default=str))
 ```
 
-## 5. 메시징 아키텍처
+## 5. 단순화된 메시징 아키텍처
 
-### 5.1 RabbitMQ 메시지 큐
+### 5.1 기본 메시징 (Redis 기반)
 
-#### 5.1.1 큐 설계
+#### 5.1.1 단순한 큐 설계
 ```python
-# messaging/queue_manager.py
-import aio_pika
-from typing import Dict, Any
+# simple_messaging.py
+import redis
+import json
+import time
+from typing import Dict, Any, List
 
-class QueueManager:
-    def __init__(self, rabbitmq_url: str):
-        self.rabbitmq_url = rabbitmq_url
-        self.connection = None
-        self.channel = None
-        
-        # 큐 정의
-        self.queues = {
-            'sentiment_analysis': {
-                'name': 'sentiment.analysis',
-                'routing_key': 'sentiment.analysis',
-                'durable': True,
-                'arguments': {
-                    'x-message-ttl': 3600000,  # 1시간
-                    'x-max-length': 10000
-                }
-            },
-            'trending_detection': {
-                'name': 'trending.detection',
-                'routing_key': 'trending.detection',
-                'durable': True,
-                'arguments': {
-                    'x-message-ttl': 3600000,
-                    'x-max-length': 5000
-                }
-            },
-            'notifications': {
-                'name': 'notifications',
-                'routing_key': 'notifications',
-                'durable': True,
-                'arguments': {
-                    'x-message-ttl': 86400000,  # 24시간
-                    'x-max-length': 50000
-                }
-            }
+class SimpleMessageQueue:
+    def __init__(self, redis_client):
+        self.redis = redis_client
+    
+    def enqueue(self, queue_name: str, message: Dict[str, Any]):
+        """메시지 큐에 추가"""
+        message_data = {
+            'data': message,
+            'timestamp': time.time()
         }
+        self.redis.lpush(queue_name, json.dumps(message_data))
     
-    async def setup(self):
-        """RabbitMQ 연결 및 큐 설정"""
-        self.connection = await aio_pika.connect_robust(self.rabbitmq_url)
-        self.channel = await self.connection.channel()
-        
-        # 큐 선언
-        for queue_config in self.queues.values():
-            await self.channel.queue_declare(**queue_config)
-        
-        # 프리페치 수 설정
-        await self.channel.set_qos(prefetch_count=10)
+    def dequeue(self, queue_name: str) -> Dict[str, Any]:
+        """메시지 큐에서 가져오기"""
+        message_data = self.redis.rpop(queue_name)
+        if message_data:
+            return json.loads(message_data)
+        return None
     
-    async def publish_message(self, queue_name: str, message: Dict[str, Any]):
-        """메시지 발행"""
-        queue_config = self.queues[queue_name]
-        
-        await self.channel.basic_publish(
-            exchange='',
-            routing_key=queue_config['routing_key'],
-            body=json.dumps(message),
-            properties=aio_pika.BasicProperties(
-                delivery_mode=2,  # 영속성 메시지
-                content_type='application/json'
-            )
-        )
+    def get_queue_size(self, queue_name: str) -> int:
+        """큐 크기 확인"""
+        return self.redis.llen(queue_name)
+    
+    def clear_queue(self, queue_name: str):
+        """큐 비우기"""
+        self.redis.delete(queue_name)
 ```
 
-## 6. 모니터링 아키텍처
+## 6. 단순화된 모니터링 아키텍처
 
-### 6.1 Prometheus 메트릭
+### 6.1 기본 메트릭
 
 #### 6.1.1 핵심 메트릭 정의
 ```python
-# monitoring/metrics.py
-from prometheus_client import Counter, Histogram, Gauge, start_http_server
+# simple_metrics.py
+import time
+import logging
+from typing import Dict, Any
+from collections import defaultdict
 
-class ServiceMetrics:
+class SimpleMetrics:
     def __init__(self):
-        # API 요청 메트릭
-        self.api_requests_total = Counter(
-            'api_requests_total',
-            'Total API requests',
-            ['method', 'endpoint', 'status']
-        )
-        
-        self.api_request_duration = Histogram(
-            'api_request_duration_seconds',
-            'API request duration',
-            ['method', 'endpoint']
-        )
-        
-        # 비즈니스 메트릭
-        self.search_queries_total = Counter(
-            'search_queries_total',
-            'Total search queries'
-        )
-        
-        self.sentiment_analyses_total = Counter(
-            'sentiment_analyses_total',
-            'Total sentiment analyses'
-        )
-        
-        # 시스템 메트릭
-        self.active_connections = Gauge(
-            'active_connections',
-            'Number of active connections'
-        )
-        
-        self.cache_hit_rate = Gauge(
-            'cache_hit_rate',
-            'Cache hit rate'
-        )
+        self.metrics = defaultdict(list)
+        self.counters = defaultdict(int)
+        self.logger = logging.getLogger(__name__)
     
-    def start_metrics_server(self, port: int = 8000):
-        """메트릭 서버 시작"""
-        start_http_server(port)
+    def increment_counter(self, metric_name: str):
+        """카운터 증가"""
+        self.counters[metric_name] += 1
+    
+    def record_timing(self, metric_name: str, duration: float):
+        """시간 기록"""
+        self.metrics[metric_name].append(duration)
+    
+    def get_average(self, metric_name: str) -> float:
+        """평균값 계산"""
+        values = self.metrics[metric_name]
+        return sum(values) / len(values) if values else 0.0
+    
+    def get_all_metrics(self) -> Dict[str, Any]:
+        """모든 메트릭 반환"""
+        result = dict(self.counters)
+        for metric_name, values in self.metrics.items():
+            if values:
+                result[f"{metric_name}_avg"] = sum(values) / len(values)
+                result[f"{metric_name}_count"] = len(values)
+        return result
+    
+    def log_metrics(self):
+        """메트릭 로깅"""
+        metrics_data = self.get_all_metrics()
+        self.logger.info(f"Metrics: {json.dumps(metrics_data)}")
 ```
 
-### 6.2 로깅 전략
+### 6.2 기본 로깅
 
-#### 6.2.1 구조화된 로깅
+#### 6.2.1 간단한 로깅
 ```python
-# logging/logger.py
+# simple_logging.py
 import logging
 import json
 from datetime import datetime
 from typing import Dict, Any
 
-class StructuredLogger:
+class SimpleLogger:
     def __init__(self, service_name: str):
         self.service_name = service_name
         self.logger = logging.getLogger(service_name)
         
-        # 로거 설정
+        # 기본 로거 설정
         handler = logging.StreamHandler()
-        formatter = StructuredFormatter()
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.INFO)
     
-    def log_api_request(self, method: str, endpoint: str, status: int, 
-                      duration: float, user_id: str = None):
-        """API 요청 로깅"""
-        self.logger.info("API request", extra={
-            'event_type': 'api_request',
-            'service': self.service_name,
-            'method': method,
-            'endpoint': endpoint,
-            'status': status,
-            'duration_ms': duration * 1000,
-            'user_id': user_id,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+    def log_request(self, endpoint: str, status: int, duration: float):
+        """요청 로깅"""
+        self.logger.info(f"Request: {endpoint} - Status: {status} - Duration: {duration:.2f}s")
     
-    def log_error(self, error: Exception, context: Dict[str, Any] = None):
+    def log_error(self, error: Exception, context: str = ""):
         """에러 로깅"""
-        self.logger.error("Service error", extra={
-            'event_type': 'error',
-            'service': self.service_name,
-            'error_type': type(error).__name__,
-            'error_message': str(error),
-            'context': context or {},
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-class StructuredFormatter(logging.Formatter):
-    def format(self, record):
-        log_entry = {
-            'level': record.levelname,
-            'message': record.getMessage(),
-            **record.__dict__
-        }
-        return json.dumps(log_entry)
+        self.logger.error(f"Error in {context}: {str(error)}")
+    
+    def log_info(self, message: str):
+        """정보 로깅"""
+        self.logger.info(message)
 ```
 
-## 7. 보안 아키텍처
+## 7. 단순화된 보안 아키텍처
 
-### 7.1 보안 레이어
+### 7.1 기본 보안 레이어
 
-#### 7.1.1 보안 미들웨어
+#### 7.1.1 간단한 보안 미들웨어
 ```python
-# security/middleware.py
+# simple_security.py
 from fastapi import Request, HTTPException, status
-from fastapi.security import HTTPBearer
 import time
 import logging
 
-class SecurityMiddleware:
-    def __init__(self, auth_service):
-        self.auth_service = auth_service
-        self.rate_limiter = RateLimiter()
+class SimpleSecurityMiddleware:
+    def __init__(self, api_keys: dict):
+        self.api_keys = api_keys
         self.logger = logging.getLogger(__name__)
     
-    async def authenticate_request(self, request: Request) -> Optional[User]:
+    def authenticate_request(self, request: Request) -> bool:
         """요청 인증"""
         try:
-            # Authorization 헤더 확인
-            authorization = request.headers.get('authorization')
-            if not authorization or not authorization.startswith('Bearer '):
-                return None
-            
-            token = authorization[7:]  # 'Bearer ' 제거
-            
-            # 토큰 검증
-            payload = self.auth_service.verify_token(token)
-            if not payload:
-                return None
-            
-            # 사용자 정보 조회
-            user = await self.auth_service.get_user_by_id(payload['user_id'])
-            if not user or not user.is_active:
-                return None
-            
-            return user
+            # API 키 확인
+            api_key = request.headers.get('x-api-key')
+            if not api_key or api_key not in self.api_keys:
+                return False
+            return True
             
         except Exception as e:
             self.logger.error(f"Authentication error: {str(e)}")
-            return None
-    
-    async def check_rate_limit(self, request: Request, user: User = None) -> bool:
-        """Rate Limiting 확인"""
-        client_ip = self.get_client_ip(request)
-        
-        if user:
-            # 사용자별 Rate Limiting
-            return await self.rate_limiter.check_user_limit(user.id)
-        else:
-            # IP별 Rate Limiting
-            return await self.rate_limiter.check_ip_limit(client_ip)
+            return False
     
     def get_client_ip(self, request: Request) -> str:
         """클라이언트 IP 주소 조회"""
-        # 프록시 환경에서 실제 IP 확인
-        forwarded_for = request.headers.get('x-forwarded-for')
-        if forwarded_for:
-            return forwarded_for.split(',')[0].strip()
-        
-        real_ip = request.headers.get('x-real-ip')
-        if real_ip:
-            return real_ip
-        
-        return request.client.host
+        return request.client.host or "unknown"
 ```
 
-## 8. 확장성 전략
+## 8. 단순화된 확장성 전략
 
-### 8.1 수평적 확장
+### 8.1 기본 수평적 확장
 
-#### 8.1.1 오토스케일링
+#### 8.1.1 간단한 수동 스케일링
 ```yaml
-# deployment/autoscaling.yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
+# simple_scaling.yaml
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: stock-search-hpa
+  name: unified-service
 spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: stock-search-service
-  minReplicas: 2
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      policies:
-      - type: Percent
-        value: 10
-        periodSeconds: 60
-    scaleUp:
-      stabilizationWindowSeconds: 60
-      policies:
-      - type: Percent
-        value: 50
-        periodSeconds: 60
+  replicas: 3  # 고정된 복제본 수
+  selector:
+    matchLabels:
+      app: unified-service
+  template:
+    metadata:
+      labels:
+        app: unified-service
+    spec:
+      containers:
+      - name: unified-service
+        image: insitechart/unified-service:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
 ```
 
-### 8.2 데이터베이스 확장
+### 8.2 단순화된 데이터베이스
 
-#### 8.2.1 읽기 전용 복제본
+#### 8.2.1 기본 설정
 ```sql
--- 읽기 전용 복제본 설정
-CREATE USER read_only_user WITH PASSWORD 'secure_password';
-GRANT CONNECT ON DATABASE insitechart TO read_only_user;
-GRANT USAGE ON SCHEMA public TO read_only_user;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO read_only_user;
-
--- 읽기 전용 서비스 연결 문자열
-DATABASE_URL=postgresql://read_only_user:secure_password@replica-host:5432/insitechart
+-- 기본 데이터베이스 설정
+-- 단일 PostgreSQL 인스턴스 사용
+-- 필요시 나중에 읽기 전용 복제본 고려
 ```
 
-## 9. 재해 복구 전략
+## 9. 단순화된 재해 복구 전략
 
-### 9.1 다중 리전 배포
+### 9.1 기본 백업 전략
 
-#### 9.1.1 지리적 분산
+#### 9.1.1 간단한 백업
 ```mermaid
 graph TB
-    subgraph "Primary Region (US-East)"
+    subgraph "Single Region Deployment"
         A[Load Balancer]
         B[API Gateway]
-        C[Services]
-        D[Primary Database]
-        E[Redis Cluster]
+        C[Unified Service]
+        D[PostgreSQL]
+        E[Redis]
     end
     
-    subgraph "Secondary Region (US-West)"
-        F[Load Balancer]
-        G[API Gateway]
-        H[Services]
-        I[Secondary Database]
-        J[Redis Cluster]
+    subgraph "Backup Storage"
+        F[S3 Backup]
     end
     
-    subgraph "Tertiary Region (EU)"
-        K[Load Balancer]
-        L[API Gateway]
-        M[Services]
-        N[Backup Database]
-        O[Redis Cluster]
-    end
-    
-    D -.->|Replication| I
-    I -.->|Replication| N
-    
-    A --> B
-    B --> C
-    C --> D
-    C --> E
-    
-    F --> G
-    G --> H
-    H --> I
-    H --> J
-    
-    K --> L
-    L --> M
-    M --> N
-    M --> O
+    D --> F
+    C --> F
 ```
 
-### 9.2 장애 조치 절차
+### 9.2 기본 장애 조치
 
-#### 9.2.1 자동 장애 조치
+#### 9.2.1 수동 장애 조치
 ```python
-# disaster_recovery/failover_manager.py
-class FailoverManager:
-    def __init__(self, monitoring_service, dns_service):
-        self.monitoring_service = monitoring_service
-        self.dns_service = dns_service
-        self.current_primary = 'us-east'
-        
-    async def check_service_health(self):
-        """서비스 상태 확인"""
-        regions = ['us-east', 'us-west', 'eu-west']
-        health_status = {}
-        
-        for region in regions:
-            is_healthy = await self.monitoring_service.check_region_health(region)
-            health_status[region] = is_healthy
-        
-        return health_status
+# simple_failover.py
+class SimpleFailoverManager:
+    def __init__(self):
+        self.backup_location = "s3://insitechart-backups"
+        self.logger = logging.getLogger(__name__)
     
-    async def initiate_failover(self, failed_region: str):
-        """장애 조치 시작"""
-        # 1. 건강한 리전 선택
-        health_status = await self.check_service_health()
-        healthy_regions = [r for r, h in health_status.items() if h and r != failed_region]
-        
-        if not healthy_regions:
-            raise Exception("No healthy regions available for failover")
-        
-        new_primary = healthy_regions[0]
-        
-        # 2. DNS 전환
-        await self.dns_service.update_primary_region(new_primary)
-        
-        # 3. 데이터베이스 승격 (필요시)
-        if failed_region == self.current_primary:
-            await self.promote_database_replica(new_primary)
-        
-        # 4. 알림 발송
-        await self.send_failover_notification(failed_region, new_primary)
-        
-        self.current_primary = new_primary
+    def create_backup(self):
+        """간단한 백업 생성"""
+        try:
+            # 데이터베이스 백업
+            self._backup_database()
+            
+            # 설정 파일 백업
+            self._backup_config()
+            
+            self.logger.info("Backup completed successfully")
+            return True
+        except Exception as e:
+            self.logger.error(f"Backup failed: {str(e)}")
+            return False
+    
+    def restore_backup(self, backup_date: str):
+        """백업 복원"""
+        try:
+            # 데이터베이스 복원
+            self._restore_database(backup_date)
+            
+            # 설정 파일 복원
+            self._restore_config(backup_date)
+            
+            self.logger.info(f"Backup {backup_date} restored successfully")
+            return True
+        except Exception as e:
+            self.logger.error(f"Restore failed: {str(e)}")
+            return False
 ```
 
 ## 10. Streamlit 기반 즉시 적용 가능한 아키텍처 구현

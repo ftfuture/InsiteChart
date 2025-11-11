@@ -9,6 +9,7 @@ import asyncio
 import aiohttp
 import re
 import json
+import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import logging
@@ -45,6 +46,9 @@ class SentimentService:
         
         # Cache TTL
         self.cache_ttl = 300  # 5 minutes
+        
+        # Session management
+        self._sessions_created = False
     
     def _load_stock_lexicon(self) -> Dict[str, float]:
         """Load stock-specific sentiment lexicon."""
@@ -67,22 +71,32 @@ class SentimentService:
     async def _get_reddit_session(self) -> aiohttp.ClientSession:
         """Get or create Reddit HTTP session."""
         if self.reddit_session is None or self.reddit_session.closed:
-            timeout = aiohttp.ClientTimeout(total=10)
+            timeout = aiohttp.ClientTimeout(total=10, connect=5)
             headers = {
                 'User-Agent': 'InsiteChart/1.0 (Sentiment Analysis Bot)'
             }
-            self.reddit_session = aiohttp.ClientSession(timeout=timeout, headers=headers)
+            connector = aiohttp.TCPConnector(limit=20, force_close=True)
+            self.reddit_session = aiohttp.ClientSession(
+                timeout=timeout,
+                headers=headers,
+                connector=connector
+            )
         return self.reddit_session
     
     async def _get_twitter_session(self) -> aiohttp.ClientSession:
         """Get or create Twitter HTTP session."""
         if self.twitter_session is None or self.twitter_session.closed:
-            timeout = aiohttp.ClientTimeout(total=10)
+            timeout = aiohttp.ClientTimeout(total=10, connect=5)
             headers = {
                 'Authorization': f'Bearer {os.getenv("TWITTER_BEARER_TOKEN", "")}',
                 'User-Agent': 'InsiteChart/1.0 (Sentiment Analysis Bot)'
             }
-            self.twitter_session = aiohttp.ClientSession(timeout=timeout, headers=headers)
+            connector = aiohttp.TCPConnector(limit=20, force_close=True)
+            self.twitter_session = aiohttp.ClientSession(
+                timeout=timeout,
+                headers=headers,
+                connector=connector
+            )
         return self.twitter_session
     
     async def _check_rate_limit(self, service: str):
@@ -113,15 +127,25 @@ class SentimentService:
     
     async def collect_mentions(self, symbol: str, timeframe: str = "24h") -> List[StockMention]:
         """Collect stock mentions from social media."""
+        # Collect Reddit and Twitter mentions in parallel
+        reddit_task = self._collect_reddit_mentions(symbol, timeframe)
+        twitter_task = self._collect_twitter_mentions(symbol, timeframe)
+        
+        reddit_mentions, twitter_mentions = await asyncio.gather(
+            reddit_task,
+            twitter_task,
+            return_exceptions=True
+        )
+        
         mentions = []
         
-        # Reddit mentions
-        reddit_mentions = await self._collect_reddit_mentions(symbol, timeframe)
-        mentions.extend(reddit_mentions)
+        # Add Reddit mentions
+        if not isinstance(reddit_mentions, Exception):
+            mentions.extend(reddit_mentions)
         
-        # Twitter mentions
-        twitter_mentions = await self._collect_twitter_mentions(symbol, timeframe)
-        mentions.extend(twitter_mentions)
+        # Add Twitter mentions
+        if not isinstance(twitter_mentions, Exception):
+            mentions.extend(twitter_mentions)
         
         # Sort by timestamp
         mentions.sort(key=lambda x: x.timestamp, reverse=True)
@@ -132,6 +156,33 @@ class SentimentService:
     async def _collect_reddit_mentions(self, symbol: str, timeframe: str) -> List[StockMention]:
         """Collect mentions from Reddit."""
         try:
+            # 개발 환경에서는 모의 데이터를 반환
+            if os.getenv("TESTING", "false").lower() == "true":
+                self.logger.info(f"Using mock Reddit data for {symbol}")
+                import random
+                mock_mentions = []
+                
+                # 모의 Reddit 언급 생성
+                for i in range(random.randint(1, 5)):
+                    import random
+                    sentiment_score = random.uniform(-0.5, 0.5)
+                    
+                    mention = StockMention(
+                        symbol=symbol,
+                        text=f"Mock Reddit mention about {symbol} #{i+1}",
+                        source=SentimentSource.REDDIT,
+                        community=random.choice(['wallstreetbets', 'investing', 'stocks']),
+                        author=f"reddit_user_{random.randint(1000, 9999)}",
+                        timestamp=datetime.utcnow() - timedelta(hours=random.randint(1, 24)),
+                        upvotes=random.randint(1, 1000),
+                        sentiment_score=sentiment_score,
+                        investment_style=random.choice(list(InvestmentStyle)),
+                        url=f"https://reddit.com/mock/{random.randint(1000, 9999)}"
+                    )
+                    mock_mentions.append(mention)
+                
+                return mock_mentions
+            
             await self._check_rate_limit('reddit')
             
             # Calculate time range
@@ -190,6 +241,32 @@ class SentimentService:
     async def _collect_twitter_mentions(self, symbol: str, timeframe: str) -> List[StockMention]:
         """Collect mentions from Twitter."""
         try:
+            # 개발 환경에서는 모의 데이터를 반환
+            if os.getenv("TESTING", "false").lower() == "true":
+                self.logger.info(f"Using mock Twitter data for {symbol}")
+                import random
+                mock_mentions = []
+                
+                # 모의 Twitter 언급 생성
+                for i in range(random.randint(1, 3)):
+                    sentiment_score = random.uniform(-0.5, 0.5)
+                    
+                    mention = StockMention(
+                        symbol=symbol,
+                        text=f"Mock Twitter mention about {symbol} #{i+1}",
+                        source=SentimentSource.TWITTER,
+                        community='twitter',
+                        author=f"twitter_user_{random.randint(1000, 9999)}",
+                        timestamp=datetime.utcnow() - timedelta(hours=random.randint(1, 12)),
+                        upvotes=random.randint(1, 500),
+                        sentiment_score=sentiment_score,
+                        investment_style=random.choice(list(InvestmentStyle)),
+                        url=f"https://twitter.com/mock/{random.randint(1000, 9999)}"
+                    )
+                    mock_mentions.append(mention)
+                
+                return mock_mentions
+            
             await self._check_rate_limit('twitter')
             
             # Twitter API v2 search URL
@@ -313,8 +390,13 @@ class SentimentService:
         """Detect investment style from text."""
         text_lower = text.lower()
         
+        # Swing trading indicators (check first as it's more specific)
+        swing_terms = ['swing trading', 'swing']
+        if any(term in text_lower for term in swing_terms):
+            return InvestmentStyle.SWING_TRADING
+        
         # Day trading indicators
-        day_trading_terms = ['day trade', 'scalp', 'intraday', 'swing', 'flip']
+        day_trading_terms = ['day trading', 'day trade', 'scalp', 'intraday', 'flip']
         if any(term in text_lower for term in day_trading_terms):
             return InvestmentStyle.DAY_TRADING
         
@@ -471,11 +553,19 @@ class SentimentService:
             
             # Get trending from popular symbols
             popular_symbols = ['GME', 'AMC', 'TSLA', 'AAPL', 'NVDA', 'AMD', 'PLTR', 'BB', 'NOK', 'SNDL']
-            trending_stocks = []
             
-            for symbol in popular_symbols:
-                sentiment_data = await self.get_sentiment_data(symbol)
-                if sentiment_data and sentiment_data.get('trending_status'):
+            # Fetch sentiment data for all symbols in parallel
+            sentiment_tasks = [
+                self.get_sentiment_data(symbol)
+                for symbol in popular_symbols
+            ]
+            
+            sentiment_results = await asyncio.gather(*sentiment_tasks, return_exceptions=True)
+            
+            trending_stocks = []
+            for i, symbol in enumerate(popular_symbols):
+                sentiment_data = sentiment_results[i]
+                if sentiment_data and not isinstance(sentiment_data, Exception) and sentiment_data.get('trending_status'):
                     trending_stock = {
                         'symbol': symbol,
                         'trend_score': sentiment_data['trend_score'],
@@ -507,3 +597,9 @@ class SentimentService:
         
         if self.twitter_session and not self.twitter_session.closed:
             await self.twitter_session.close()
+        
+        self._sessions_created = False
+
+
+# 전역 감성 분석 서비스 인스턴스
+sentiment_service = SentimentService()

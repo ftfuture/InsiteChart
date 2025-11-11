@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="9" failures="0" skipped="0" tests="9" time="5.923" timestamp="2025-11-10T23:48:41.920161+07:00" hostname="ftfutureui-MacBookPro.local"><testcase classname="" name="tests.unit.api.test_auth_routes" time="0.000"><error message="collection failure">../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/api/test_auth_routes.py:16: in &lt;module&gt;
+    from backend.api.auth_routes import router, USERS, API_KEYS, JWT_SECRET
+backend/api/__init__.py:7: in &lt;module&gt;
+    from .routes import router as api_router
+backend/api/routes.py:16: in &lt;module&gt;
+    from ..services.advanced_sentiment_service import (
+E     File "/Users/ftfuture/work/workspace/uService/insitechart/backend/services/advanced_sentiment_service.py", line 1486
+E       async def analyze_social_media_sentiment(self, social_data: List[Dict[str, Any]], symbol: Optional[str = None) -&gt; Dict[str, Any]:
+E                                                                                                                    ^
+E   SyntaxError: closing parenthesis ')' does not match opening parenthesis '['</error></testcase><testcase classname="" name="tests.unit.api.test_feedback_routes" time="0.000"><error message="collection failure">../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/api/test_feedback_routes.py:13: in &lt;module&gt;
+    from backend.api.feedback_routes import router
+backend/api/__init__.py:7: in &lt;module&gt;
+    from .routes import router as api_router
+backend/api/routes.py:16: in &lt;module&gt;
+    from ..services.advanced_sentiment_service import (
+E     File "/Users/ftfuture/work/workspace/uService/insitechart/backend/services/advanced_sentiment_service.py", line 1486
+E       async def analyze_social_media_sentiment(self, social_data: List[Dict[str, Any]], symbol: Optional[str = None) -&gt; Dict[str, Any]:
+E                                                                                                                    ^
+E   SyntaxError: closing parenthesis ')' does not match opening parenthesis '['</error></testcase><testcase classname="" name="tests.unit.api.test_gateway" time="0.000"><error message="collection failure">../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/api/test_gateway.py:10: in &lt;module&gt;
+    from backend.api.gateway import APIGateway, GatewayRoute, CircuitBreakerState
+backend/api/__init__.py:7: in &lt;module&gt;
+    from .routes import router as api_router
+backend/api/routes.py:16: in &lt;module&gt;
+    from ..services.advanced_sentiment_service import (
+E     File "/Users/ftfuture/work/workspace/uService/insitechart/backend/services/advanced_sentiment_service.py", line 1486
+E       async def analyze_social_media_sentiment(self, social_data: List[Dict[str, Any]], symbol: Optional[str = None) -&gt; Dict[str, Any]:
+E                                                                                                                    ^
+E   SyntaxError: closing parenthesis ')' does not match opening parenthesis '['</error></testcase><testcase classname="" name="tests.unit.api.test_routes" time="0.000"><error message="collection failure">../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/api/test_routes.py:13: in &lt;module&gt;
+    from backend.api.routes import router
+backend/api/__init__.py:7: in &lt;module&gt;
+    from .routes import router as api_router
+backend/api/routes.py:16: in &lt;module&gt;
+    from ..services.advanced_sentiment_service import (
+E     File "/Users/ftfuture/work/workspace/uService/insitechart/backend/services/advanced_sentiment_service.py", line 1486
+E       async def analyze_social_media_sentiment(self, social_data: List[Dict[str, Any]], symbol: Optional[str = None) -&gt; Dict[str, Any]:
+E                                                                                                                    ^
+E   SyntaxError: closing parenthesis ')' does not match opening parenthesis '['</error></testcase><testcase classname="" name="tests.unit.api.test_security_routes" time="0.000"><error message="collection failure">../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/api/test_security_routes.py:14: in &lt;module&gt;
+    from backend.api.security_routes import router
+backend/api/__init__.py:7: in &lt;module&gt;
+    from .routes import router as api_router
+backend/api/routes.py:16: in &lt;module&gt;
+    from ..services.advanced_sentiment_service import (
+E     File "/Users/ftfuture/work/workspace/uService/insitechart/backend/services/advanced_sentiment_service.py", line 1486
+E       async def analyze_social_media_sentiment(self, social_data: List[Dict[str, Any]], symbol: Optional[str = None) -&gt; Dict[str, Any]:
+E                                                                                                                    ^
+E   SyntaxError: closing parenthesis ')' does not match opening parenthesis '['</error></testcase><testcase classname="" name="tests.unit.api.test_websocket_routes" time="0.000"><error message="collection failure">../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/api/test_websocket_routes.py:16: in &lt;module&gt;
+    from backend.api.websocket_routes import router
+backend/api/__init__.py:7: in &lt;module&gt;
+    from .routes import router as api_router
+backend/api/routes.py:16: in &lt;module&gt;
+    from ..services.advanced_sentiment_service import (
+E     File "/Users/ftfuture/work/workspace/uService/insitechart/backend/services/advanced_sentiment_service.py", line 1486
+E       async def analyze_social_media_sentiment(self, social_data: List[Dict[str, Any]], symbol: Optional[str = None) -&gt; Dict[str, Any]:
+E                                                                                                                    ^
+E   SyntaxError: closing parenthesis ')' does not match opening parenthesis '['</error></testcase><testcase classname="" name="tests.unit.services.test_advanced_sentiment_service" time="0.000"><error message="collection failure">../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/services/test_advanced_sentiment_service.py:10: in &lt;module&gt;
+    from backend.services.advanced_sentiment_service import AdvancedSentimentService, SentimentModel
+E     File "/Users/ftfuture/work/workspace/uService/insitechart/backend/services/advanced_sentiment_service.py", line 1486
+E       async def analyze_social_media_sentiment(self, social_data: List[Dict[str, Any]], symbol: Optional[str = None) -&gt; Dict[str, Any]:
+E                                                                                                                    ^
+E   SyntaxError: closing parenthesis ')' does not match opening parenthesis '['</error></testcase><testcase classname="" name="tests.unit.services.test_realtime_data_collector" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/ftfuture/work/workspace/uService/insitechart/tests/unit/services/test_realtime_data_collector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/services/test_realtime_data_collector.py:14: in &lt;module&gt;
+    from backend.services.realtime_data_collector import (
+E   ImportError: cannot import name 'DataPoint' from 'backend.services.realtime_data_collector' (/Users/ftfuture/work/workspace/uService/insitechart/backend/services/realtime_data_collector.py)</error></testcase><testcase classname="" name="tests.unit.services.test_unified_service" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/ftfuture/work/workspace/uService/insitechart/tests/unit/services/test_unified_service.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+../../../../.pyenv/versions/3.13.2/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../../../../.pyenv/versions/3.13.2/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/unit/services/test_unified_service.py:14: in &lt;module&gt;
+    from backend.services.unified_service import (
+E   ImportError: cannot import name 'UnifiedDataResponse' from 'backend.services.unified_service' (/Users/ftfuture/work/workspace/uService/insitechart/backend/services/unified_service.py)</error></testcase></testsuite></testsuites>

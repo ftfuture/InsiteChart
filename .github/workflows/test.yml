@@ -1,0 +1,295 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 매일 새벽 UTC 02:00 (한국 시간 11:00)에 전체 테스트 실행
+    - cron: '0 2 * * *'
+    # 주중 업무 시간에만 성능 테스트 실행 (새벽 UTC 13:00, 한국 시간 22:00)
+    - cron: '0 13 * * 1-5'
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest pytest-cov pytest-mock pytest-asyncio
+        pip install -r requirements-test.txt
+    
+    - name: Run unit tests
+      run: |
+        pytest tests/unit/ -v \
+          --cov=backend \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-fail-under=80 \
+          --junitxml=unit-test-results.xml
+    
+    - name: Upload unit test coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --appendonly yes
+          --maxmemory 256mb
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-integration-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-integration-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest pytest-cov pytest-mock pytest-asyncio
+        pip install -r requirements-test.txt
+    
+    - name: Wait for Redis
+      run: |
+        timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
+    
+    - name: Run integration tests
+      env:
+        REDIS_URL: redis://localhost:6379
+        TESTING: true
+      run: |
+        pytest tests/integration/ -v \
+          --cov=backend \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-fail-under=75 \
+          --junitxml=integration-test-results.xml
+    
+    - name: Upload integration test coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: integration
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+  performance-tests:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.event_name == 'schedule' || github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-performance-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-performance-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest pytest-cov pytest-mock pytest-asyncio locust
+        pip install -r requirements-test.txt
+    
+    - name: Run performance tests
+      run: |
+        pytest tests/performance/ -v \
+          --cov=backend \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-fail-under=70 \
+          --junitxml=performance-test-results.xml \
+          -m "performance"
+    
+    - name: Upload performance test coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: performance
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+  security-tests:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-security-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-security-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest pytest-cov pytest-mock pytest-asyncio bandit
+        pip install -r requirements-test.txt
+    
+    - name: Run security tests
+      run: |
+        pytest tests/unit/ -v \
+          --cov=backend \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-fail-under=80 \
+          --junitxml=security-test-results.xml \
+          -m "security or auth"
+    
+    - name: Run security linting
+      run: |
+        bandit -r backend/ -f json -o security-report.json
+    
+    - name: Upload security test coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: security
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+  test-report:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, performance-tests, security-tests]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all test reports
+      uses: actions/download-artifact@v3
+      with:
+        name: test-reports
+        path: ./reports/
+    
+    - name: Generate comprehensive test report
+      run: |
+        python scripts/generate_test_report.py
+    
+    - name: Upload test report
+      uses: actions/upload-artifact@v3
+      with:
+        name: comprehensive-test-report
+        path: reports/
+        retention-days: 30
+
+  build-test-docker-image:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and push Docker image
+      run: |
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --tag insitechart/test:${{ github.sha }} \
+          --tag insitechart/test:latest \
+          --push .
+    
+    - name: Update test image tag
+      run: |
+        echo "Docker image insitechart/test:${{ github.sha }} pushed successfully"
+
+  notify-test-results:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, performance-tests, security-tests]
+    if: always()
+    
+    steps:
+    - name: Notify test results
+      uses: 8398a7/action-slack@v3
+      if: always()
+      with:
+        status: ${{ job.status }}
+        channel: '#insitechart-ci'
+        text: |
+          Test suite ${{ job.status }} for branch ${{ github.ref }}
+          Commit: ${{ github.sha }}
+          Unit Tests: ${{ needs.unit-tests.result }}
+          Integration Tests: ${{ needs.integration-tests.result }}
+          Performance Tests: ${{ needs.performance-tests.result }}
+          Security Tests: ${{ needs.security-tests.result }}
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
