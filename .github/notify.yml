@@ -1,0 +1,22 @@
+# GitHub 알림 설정
+# 이 파일은 GitHub Actions에서 보내는 이메일 알림을 제어합니다
+
+# 모든 알림 비활성화
+notifications:
+  email: false
+  
+# 특정 이벤트에 대한 알림 설정
+workflow_dispatch:
+  notify: false
+
+pull_request:
+  notify: false
+
+push:
+  notify: false
+
+release:
+  notify: false
+
+schedule:
+  notify: false
