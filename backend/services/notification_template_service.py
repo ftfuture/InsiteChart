@@ -270,6 +270,132 @@ class NotificationTemplateService:
                     title_template="InsiteChart에 오신 것을 환영합니다",
                     message_template="실시간 알림에 연결되었습니다",
                     variables=[]
+                ),
+
+                # Japanese Templates
+                NotificationTemplate(
+                    id="price_alert_ja",
+                    name="価格アラートテンプレート",
+                    type=TemplateType.PRICE_ALERT,
+                    language=TemplateLanguage.JAPANESE,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="価格アラート: {symbol}",
+                    message_template="{symbol}が{change_pct:.2f}%変動して${current_price:.2f}になりました",
+                    variables=["symbol", "change_pct", "current_price"]
+                ),
+                NotificationTemplate(
+                    id="sentiment_alert_ja",
+                    name="センチメントアラートテンプレート",
+                    type=TemplateType.SENTIMENT_ALERT,
+                    language=TemplateLanguage.JAPANESE,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="センチメントアラート: {symbol}",
+                    message_template="{symbol}は{sentiment_type}センチメント({sentiment_score:.2f})を示しています",
+                    variables=["symbol", "sentiment_type", "sentiment_score"]
+                ),
+
+                # Chinese Templates
+                NotificationTemplate(
+                    id="price_alert_zh",
+                    name="价格警报模板",
+                    type=TemplateType.PRICE_ALERT,
+                    language=TemplateLanguage.CHINESE,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="价格警报: {symbol}",
+                    message_template="{symbol}已变动{change_pct:.2f}%至${current_price:.2f}",
+                    variables=["symbol", "change_pct", "current_price"]
+                ),
+                NotificationTemplate(
+                    id="sentiment_alert_zh",
+                    name="情感警报模板",
+                    type=TemplateType.SENTIMENT_ALERT,
+                    language=TemplateLanguage.CHINESE,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="情感警报: {symbol}",
+                    message_template="{symbol}显示{sentiment_type}情感({sentiment_score:.2f})",
+                    variables=["symbol", "sentiment_type", "sentiment_score"]
+                ),
+
+                # Spanish Templates
+                NotificationTemplate(
+                    id="price_alert_es",
+                    name="Plantilla de Alerta de Precio",
+                    type=TemplateType.PRICE_ALERT,
+                    language=TemplateLanguage.SPANISH,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="Alerta de Precio: {symbol}",
+                    message_template="{symbol} ha cambiado {change_pct:.2f}% a ${current_price:.2f}",
+                    variables=["symbol", "change_pct", "current_price"]
+                ),
+
+                # French Templates
+                NotificationTemplate(
+                    id="price_alert_fr",
+                    name="Modèle d'Alerte de Prix",
+                    type=TemplateType.PRICE_ALERT,
+                    language=TemplateLanguage.FRENCH,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="Alerte de Prix: {symbol}",
+                    message_template="{symbol} a changé de {change_pct:.2f}% à ${current_price:.2f}",
+                    variables=["symbol", "change_pct", "current_price"]
+                ),
+
+                # German Templates
+                NotificationTemplate(
+                    id="price_alert_de",
+                    name="Preisalert-Vorlage",
+                    type=TemplateType.PRICE_ALERT,
+                    language=TemplateLanguage.GERMAN,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="Preisalert: {symbol}",
+                    message_template="{symbol} hat sich um {change_pct:.2f}% auf ${current_price:.2f} geändert",
+                    variables=["symbol", "change_pct", "current_price"]
+                ),
+
+                # Portuguese Templates
+                NotificationTemplate(
+                    id="price_alert_pt",
+                    name="Modelo de Alerta de Preço",
+                    type=TemplateType.PRICE_ALERT,
+                    language=TemplateLanguage.PORTUGUESE,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="Alerta de Preço: {symbol}",
+                    message_template="{symbol} mudou {change_pct:.2f}% para ${current_price:.2f}",
+                    variables=["symbol", "change_pct", "current_price"]
+                ),
+
+                # Russian Templates
+                NotificationTemplate(
+                    id="price_alert_ru",
+                    name="Шаблон Ценового Оповещения",
+                    type=TemplateType.PRICE_ALERT,
+                    language=TemplateLanguage.RUSSIAN,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="Ценовое оповещение: {symbol}",
+                    message_template="{symbol} изменился на {change_pct:.2f}% до ${current_price:.2f}",
+                    variables=["symbol", "change_pct", "current_price"]
+                ),
+
+                # Error Templates for all languages
+                NotificationTemplate(
+                    id="error_en",
+                    name="Error Template",
+                    type=TemplateType.ERROR,
+                    language=TemplateLanguage.ENGLISH,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="Error",
+                    message_template="An error occurred: {error_message}",
+                    variables=["error_message"]
+                ),
+                NotificationTemplate(
+                    id="error_ko",
+                    name="오류 템플릿",
+                    type=TemplateType.ERROR,
+                    language=TemplateLanguage.KOREAN,
+                    channel=NotificationChannel.WEBSOCKET,
+                    title_template="오류",
+                    message_template="오류가 발생했습니다: {error_message}",
+                    variables=["error_message"]
                 )
             ]
             
