@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import redis.asyncio as redis
 
-from collectors import YahooFinanceCollector, RedditCollector, TwitterCollector
+from collectors import YahooFinanceCollector, RedditCollector, TwitterCollector, StockTwitsCollector
 
 # Configure logging
 logging.basicConfig(
@@ -38,7 +38,7 @@ class CollectStocksRequest(BaseModel):
 class CollectSentimentRequest(BaseModel):
     """Request model for sentiment collection."""
     symbols: List[str] = Field(..., min_items=1, max_items=50)
-    sources: List[str] = Field(default=["reddit"], regex="^(reddit|twitter)$")
+    sources: List[str] = Field(default=["reddit"], regex="^(reddit|twitter|stocktwits)$")
 
 
 class JobStatusResponse(BaseModel):
@@ -70,6 +70,7 @@ app = FastAPI(
 yahoo_collector = YahooFinanceCollector(cache_ttl=300)
 reddit_collector = RedditCollector()
 twitter_collector = TwitterCollector()
+stocktwits_collector = StockTwitsCollector()
 
 # Job tracking
 jobs: Dict[str, Dict[str, Any]] = {}
@@ -344,7 +345,7 @@ async def _collect_sentiment_job(job_id: str, symbols: List[str], sources: List[
     Args:
         job_id: Job ID
         symbols: List of symbols to collect
-        sources: List of sources (reddit, twitter)
+        sources: List of sources (reddit, twitter, stocktwits)
     """
     try:
         jobs[job_id]["status"] = "running"
@@ -359,6 +360,11 @@ async def _collect_sentiment_job(job_id: str, symbols: List[str], sources: List[
         if "twitter" in sources:
             twitter_results = await twitter_collector.collect_multiple(symbols)
             results_count += len([r for r in twitter_results.values() if r is not None])
+
+        # Collect from StockTwits
+        if "stocktwits" in sources:
+            stocktwits_results = await stocktwits_collector.collect_multiple(symbols)
+            results_count += len([r for r in stocktwits_results.values() if r is not None])
 
         # Update job status
         jobs[job_id]["status"] = "completed"
@@ -407,14 +413,14 @@ async def get_stock_data(symbol: str = Query(..., min_length=1, max_length=10)):
 @app.get("/api/v1/quick/sentiment/{symbol}", tags=["Quick Collection"])
 async def get_sentiment_data(
     symbol: str = Query(..., min_length=1, max_length=10),
-    source: str = Query("reddit", regex="^(reddit|twitter)$")
+    source: str = Query("reddit", regex="^(reddit|twitter|stocktwits)$")
 ):
     """
     Quickly get sentiment data for a single symbol (synchronous).
 
     Args:
         symbol: Stock symbol
-        source: Data source (reddit or twitter)
+        source: Data source (reddit, twitter, or stocktwits)
 
     Returns:
         Sentiment data
@@ -422,8 +428,10 @@ async def get_sentiment_data(
     try:
         if source == "reddit":
             data = await reddit_collector.collect(symbol.upper())
-        else:  # twitter
+        elif source == "twitter":
             data = await twitter_collector.collect(symbol.upper())
+        else:  # stocktwits
+            data = await stocktwits_collector.collect(symbol.upper())
 
         if data:
             return {
