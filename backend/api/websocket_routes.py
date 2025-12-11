@@ -599,3 +599,123 @@ async def disconnect_user(user_id: str):
                 "timestamp": datetime.utcnow().isoformat()
             }
         )
+
+
+@router.get("/pubsub/stats")
+async def get_pubsub_stats():
+    """Get Redis Pub/Sub Manager statistics."""
+    try:
+        from ..services.redis_pubsub_manager import redis_pubsub_manager
+
+        if not redis_pubsub_manager:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Redis Pub/Sub Manager not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        stats = redis_pubsub_manager.get_stats()
+
+        return {
+            "success": True,
+            "server_id": redis_pubsub_manager.server_id,
+            "data": stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting Pub/Sub stats: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get Pub/Sub stats",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/pubsub/subscriptions")
+async def get_pubsub_subscriptions():
+    """Get list of active Pub/Sub subscriptions."""
+    try:
+        from ..services.redis_pubsub_manager import redis_pubsub_manager
+
+        if not redis_pubsub_manager:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Redis Pub/Sub Manager not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        subscriptions = redis_pubsub_manager.get_subscriptions()
+
+        return {
+            "success": True,
+            "data": {
+                "server_id": redis_pubsub_manager.server_id,
+                "subscription_count": len(subscriptions),
+                "subscriptions": subscriptions
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting Pub/Sub subscriptions: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get Pub/Sub subscriptions",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/pubsub/errors")
+async def get_pubsub_errors():
+    """Get recent Pub/Sub errors."""
+    try:
+        from ..services.redis_pubsub_manager import redis_pubsub_manager
+
+        if not redis_pubsub_manager:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Redis Pub/Sub Manager not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        errors = redis_pubsub_manager.get_error_log(limit=20)
+
+        return {
+            "success": True,
+            "data": {
+                "server_id": redis_pubsub_manager.server_id,
+                "error_count": len(errors),
+                "recent_errors": errors
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting Pub/Sub errors: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get Pub/Sub errors",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )

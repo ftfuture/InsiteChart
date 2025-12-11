@@ -96,6 +96,12 @@ async def lifespan(app: FastAPI):
         await operational_monitor.start()
         logger.info("Operational monitor initialized")
 
+        # Initialize Redis Pub/Sub Manager for distributed event broadcasting
+        from .services.redis_pubsub_manager import get_redis_pubsub_manager
+        pubsub_manager = await get_redis_pubsub_manager()
+        await pubsub_manager.start_listening()
+        logger.info("Redis Pub/Sub Manager initialized for real-time event broadcasting")
+
         # Initialize realtime data collector
         from .services.realtime_data_collector import realtime_data_collector
         await realtime_data_collector.initialize()
@@ -108,6 +114,7 @@ async def lifespan(app: FastAPI):
         app.state.notification_service = notification_service
         app.state.security_service = security_service
         app.state.realtime_data_collector = realtime_data_collector
+        app.state.pubsub_manager = pubsub_manager
         
         logger.info("InsiteChart API server started successfully")
         
@@ -121,6 +128,11 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down InsiteChart API server...")
 
     try:
+        # Stop Redis Pub/Sub Manager
+        if hasattr(app.state, 'pubsub_manager') and app.state.pubsub_manager:
+            await app.state.pubsub_manager.close()
+            logger.info("Redis Pub/Sub Manager stopped")
+
         # Stop realtime data collector
         if hasattr(app.state, 'realtime_data_collector') and app.state.realtime_data_collector:
             await app.state.realtime_data_collector.stop()
