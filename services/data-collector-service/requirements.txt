@@ -13,6 +13,7 @@ yfinance==0.2.32
 praw==7.7.0
 tweepy==4.14.0
 newsapi==1.1.1
+# StockTwits uses public API (no dedicated library needed, uses httpx/requests)
 
 # Data Processing
 pandas==2.1.3

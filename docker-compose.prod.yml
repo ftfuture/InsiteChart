@@ -1,0 +1,67 @@
+# Production configuration
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  # Production settings - no volume mounts, optimized resources
+  backend:
+    restart: always
+    environment:
+      DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+
+  data-collector:
+    restart: always
+    environment:
+      DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  analytics:
+    restart: always
+    environment:
+      DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  gateway:
+    restart: always
+    environment:
+      DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  frontend:
+    restart: always
+    environment:
+      DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Database with production settings
+  postgres:
+    restart: always
+    environment:
+      POSTGRES_INITDB_ARGS: "-c shared_buffers=256MB -c max_connections=200 -c effective_cache_size=1GB"
+
+  # Redis with production settings
+  redis:
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
