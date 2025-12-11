@@ -137,10 +137,37 @@ class RealtimeDataCollector:
         
         # Redis 클라이언트 (호환성을 위해 추가)
         self.redis_client = None
-        
+
         # 로거
         self.logger = logging.getLogger(__name__)
-    
+
+    async def initialize(self):
+        """초기화: 데이터 소스와 이벤트 버스 설정"""
+        try:
+            self.logger.info("Initializing RealtimeDataCollector...")
+
+            # 데이터 소스 초기화 (이미 주입된 경우 제외)
+            if not self.data_sources or len(self.data_sources) == 0:
+                # Yahoo Finance 데이터 소스 추가
+                self.data_sources[DataSource.YAHOO_FINANCE] = yahoo_finance_service
+                self.logger.info("Yahoo Finance data source initialized")
+
+            # 이벤트 버스 초기화 (이미 주입된 경우 제외)
+            if not self.event_bus:
+                self.event_bus = kafka_event_bus
+                self.logger.info("Kafka event bus initialized")
+
+            # 설정 검증
+            is_valid, errors = self._validate_config(self.config)
+            if not is_valid:
+                self.logger.warning(f"Config validation warnings: {errors}")
+
+            self.logger.info("RealtimeDataCollector initialization complete")
+
+        except Exception as e:
+            self.logger.error(f"Error initializing RealtimeDataCollector: {str(e)}")
+            raise
+
     async def start(self):
         """데이터 수집 시작"""
         if self.status == CollectionStatus.RUNNING:
@@ -391,8 +418,9 @@ class RealtimeDataCollector:
 # 전역 실시간 데이터 수집기 인스턴스
 realtime_data_collector = RealtimeDataCollector(
     config=CollectionConfig(
-        symbols=[],
-        data_types=["stock_price"],
-        sources=[DataSource.YAHOO_FINANCE]
+        symbols=["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"],  # 기본 감시 대상
+        data_types=["stock_price", "volume"],
+        sources=[DataSource.YAHOO_FINANCE],
+        interval=60  # 60초 마다 수집
     )
 )

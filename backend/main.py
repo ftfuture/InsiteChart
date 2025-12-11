@@ -95,42 +95,47 @@ async def lifespan(app: FastAPI):
         # Initialize operational monitor
         await operational_monitor.start()
         logger.info("Operational monitor initialized")
-        
-        # Initialize realtime data collector (disabled for now due to import issues)
-        # from .services.realtime_data_collector import realtime_data_collector
-        # await realtime_data_collector.initialize()
-        # await realtime_data_collector.start()
-        # logger.info("Realtime data collector initialized")
-        logger.info("Realtime data collector disabled due to import issues")
-        
+
+        # Initialize realtime data collector
+        from .services.realtime_data_collector import realtime_data_collector
+        await realtime_data_collector.initialize()
+        await realtime_data_collector.start()
+        logger.info("Realtime data collector initialized and started")
+
         # Store services in app state for dependency injection
         app.state.cache_manager = cache_manager
         app.state.unified_service = unified_service
         app.state.notification_service = notification_service
         app.state.security_service = security_service
+        app.state.realtime_data_collector = realtime_data_collector
         
         logger.info("InsiteChart API server started successfully")
         
     except Exception as e:
         logger.error(f"Failed to initialize services: {str(e)}")
         raise
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down InsiteChart API server...")
-    
+
     try:
+        # Stop realtime data collector
+        if hasattr(app.state, 'realtime_data_collector') and app.state.realtime_data_collector:
+            await app.state.realtime_data_collector.stop()
+            logger.info("Realtime data collector stopped")
+
         # Stop notification service
         if hasattr(app.state, 'notification_service') and app.state.notification_service:
             await app.state.notification_service.stop()
             logger.info("Notification service stopped")
-        
+
         # Stop security service
         if hasattr(app.state, 'security_service') and app.state.security_service:
             await app.state.security_service.stop()
             logger.info("Security service stopped")
-        
+
         # Stop operational monitor
         await operational_monitor.stop()
         logger.info("Operational monitor stopped")
