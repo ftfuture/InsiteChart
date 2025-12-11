@@ -898,3 +898,270 @@ async def get_locks_status():
                 "timestamp": datetime.utcnow().isoformat()
             }
         )
+
+
+@router.get("/notification-templates/stats")
+async def get_notification_template_stats(
+    service: RealtimeNotificationService = Depends(get_notification_service)
+):
+    """Get notification template statistics."""
+    try:
+        if not service or not service.template_service:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Notification Template Service not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        stats = await service.template_service.get_template_stats()
+
+        return {
+            "success": True,
+            "data": stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting template stats: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get template stats",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/notification-templates/list")
+async def list_notification_templates(
+    template_type: Optional[str] = Query(None),
+    language: Optional[str] = Query(None),
+    channel: Optional[str] = Query(None),
+    service: RealtimeNotificationService = Depends(get_notification_service)
+):
+    """List notification templates with optional filters."""
+    try:
+        if not service or not service.template_service:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Notification Template Service not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        from ..services.notification_template_service import TemplateType, TemplateLanguage
+
+        # Parse filter parameters
+        tt = TemplateType(template_type) if template_type else None
+        lang = TemplateLanguage(language) if language else None
+        ch = channel if channel else None
+
+        templates = await service.template_service.list_templates(
+            template_type=tt,
+            language=lang,
+            active_only=True
+        )
+
+        templates_data = [
+            {
+                "id": t.id,
+                "name": t.name,
+                "type": t.type.value,
+                "language": t.language.value,
+                "title_template": t.title_template,
+                "message_template": t.message_template,
+                "variables": t.variables,
+                "is_active": t.is_active,
+                "created_at": t.created_at.isoformat(),
+                "updated_at": t.updated_at.isoformat()
+            }
+            for t in templates
+        ]
+
+        return {
+            "success": True,
+            "total": len(templates_data),
+            "data": templates_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing templates: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to list templates",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/notification-templates/{template_id}")
+async def get_notification_template(
+    template_id: str,
+    service: RealtimeNotificationService = Depends(get_notification_service)
+):
+    """Get a specific notification template."""
+    try:
+        if not service or not service.template_service:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Notification Template Service not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        template = await service.template_service.get_template(template_id)
+
+        if not template:
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "success": False,
+                    "error": "Template not found",
+                    "message": f"Template {template_id} does not exist",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        return {
+            "success": True,
+            "data": {
+                "id": template.id,
+                "name": template.name,
+                "type": template.type.value,
+                "language": template.language.value,
+                "title_template": template.title_template,
+                "message_template": template.message_template,
+                "variables": template.variables,
+                "is_active": template.is_active,
+                "created_at": template.created_at.isoformat(),
+                "updated_at": template.updated_at.isoformat()
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting template {template_id}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get template",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/notification-templates/{template_id}/render")
+async def render_notification_template(
+    template_id: str,
+    variables: str = Query("{}"),
+    service: RealtimeNotificationService = Depends(get_notification_service)
+):
+    """Render a notification template with variables."""
+    try:
+        if not service or not service.template_service:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Notification Template Service not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        # Parse variables JSON
+        import json
+        try:
+            vars_dict = json.loads(variables)
+        except json.JSONDecodeError:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": "Invalid JSON variables",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        rendered = await service.template_service.render_template(template_id, vars_dict)
+
+        if not rendered:
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "success": False,
+                    "error": "Failed to render template",
+                    "message": f"Could not render template {template_id}",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        return {
+            "success": True,
+            "data": {
+                "template_id": rendered.template_id,
+                "title": rendered.title,
+                "message": rendered.message,
+                "language": rendered.language.value,
+                "variables": rendered.variables,
+                "rendered_at": rendered.rendered_at.isoformat()
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error rendering template {template_id}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to render template",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/notification-templates/languages")
+async def get_supported_languages():
+    """Get list of supported languages."""
+    try:
+        from ..services.notification_template_service import TemplateLanguage
+
+        languages = [
+            {"code": lang.value, "name": lang.name}
+            for lang in TemplateLanguage
+        ]
+
+        return {
+            "success": True,
+            "total": len(languages),
+            "data": languages,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting languages: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get languages",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
