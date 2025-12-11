@@ -719,3 +719,182 @@ async def get_pubsub_errors():
                 "timestamp": datetime.utcnow().isoformat()
             }
         )
+
+
+@router.get("/message-ordering/stats")
+async def get_message_ordering_stats():
+    """Get Message Ordering Manager statistics."""
+    try:
+        from ..services.message_ordering_manager import message_ordering_manager
+
+        if not message_ordering_manager:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Message Ordering Manager not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        stats = message_ordering_manager.get_stats()
+
+        return {
+            "success": True,
+            "data": stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting message ordering stats: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get message ordering stats",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/message-ordering/queue-status")
+async def get_message_ordering_queue_status():
+    """Get Message Ordering Manager queue status."""
+    try:
+        from ..services.message_ordering_manager import message_ordering_manager
+
+        if not message_ordering_manager:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Message Ordering Manager not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        queue_size = message_ordering_manager.message_queue.qsize()
+        stats = message_ordering_manager.get_stats()
+
+        return {
+            "success": True,
+            "data": {
+                "queue_size": queue_size,
+                "current_global_sequence": stats.get("current_global_sequence"),
+                "partition_count": stats.get("partition_count"),
+                "total_messages": stats.get("total_messages"),
+                "processed_messages": stats.get("processed_messages"),
+                "failed_messages": stats.get("failed_messages"),
+                "duplicates_detected": stats.get("duplicates_detected"),
+                "delivery_guarantee": stats.get("delivery_guarantee")
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting message ordering queue status: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get message ordering queue status",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/message-ordering/duplicate-detector-status")
+async def get_duplicate_detector_status():
+    """Get Duplicate Detector statistics."""
+    try:
+        from ..services.message_ordering_manager import message_ordering_manager
+
+        if not message_ordering_manager:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Message Ordering Manager not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        duplicate_detector = message_ordering_manager.duplicate_detector
+
+        return {
+            "success": True,
+            "data": {
+                "ttl_seconds": duplicate_detector.ttl_seconds,
+                "local_cache_size": len(duplicate_detector.local_cache),
+                "processed_messages_count": len(duplicate_detector.processed_messages),
+                "redis_client_available": duplicate_detector.redis_client is not None
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting duplicate detector status: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get duplicate detector status",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+
+@router.get("/message-ordering/locks-status")
+async def get_locks_status():
+    """Get Distributed Lock Manager status."""
+    try:
+        from ..services.message_ordering_manager import message_ordering_manager
+
+        if not message_ordering_manager:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "Message Ordering Manager not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+
+        lock_manager = message_ordering_manager.lock_manager
+        local_locks = lock_manager.local_locks
+
+        locks_info = {}
+        for resource_id, lock in local_locks.items():
+            locks_info[resource_id] = {
+                "lock_id": lock.lock_id,
+                "owner": lock.owner,
+                "ttl_seconds": lock.ttl_seconds,
+                "acquired_at": lock.acquired_at.isoformat(),
+                "expires_at": lock.expires_at.isoformat() if lock.expires_at else None,
+                "is_expired": lock.is_expired()
+            }
+
+        return {
+            "success": True,
+            "data": {
+                "total_locks": len(locks_info),
+                "locks": locks_info,
+                "redis_client_available": lock_manager.redis_client is not None
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting locks status: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Failed to get locks status",
+                "message": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )

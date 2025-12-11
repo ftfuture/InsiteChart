@@ -108,6 +108,11 @@ async def lifespan(app: FastAPI):
         await realtime_data_collector.start()
         logger.info("Realtime data collector initialized and started")
 
+        # Initialize Message Ordering Manager for distributed concurrency control
+        from .services.message_ordering_manager import get_message_ordering_manager
+        message_ordering_manager = await get_message_ordering_manager()
+        logger.info("Message Ordering Manager initialized for concurrency and message ordering")
+
         # Store services in app state for dependency injection
         app.state.cache_manager = cache_manager
         app.state.unified_service = unified_service
@@ -115,6 +120,7 @@ async def lifespan(app: FastAPI):
         app.state.security_service = security_service
         app.state.realtime_data_collector = realtime_data_collector
         app.state.pubsub_manager = pubsub_manager
+        app.state.message_ordering_manager = message_ordering_manager
         
         logger.info("InsiteChart API server started successfully")
         
@@ -128,6 +134,13 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down InsiteChart API server...")
 
     try:
+        # Stop Message Ordering Manager
+        if hasattr(app.state, 'message_ordering_manager') and app.state.message_ordering_manager:
+            # Message Ordering Manager doesn't require explicit stop, but we log stats before shutdown
+            stats = app.state.message_ordering_manager.get_stats()
+            logger.info(f"Message Ordering Manager stats: {stats}")
+            logger.info("Message Ordering Manager stopped")
+
         # Stop Redis Pub/Sub Manager
         if hasattr(app.state, 'pubsub_manager') and app.state.pubsub_manager:
             await app.state.pubsub_manager.close()
